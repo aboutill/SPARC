@@ -1,0 +1,97 @@
+# Image and mask file extensions
+data:
+  img: mag.nii.gz
+  mask: mask.nii.gz
+  
+# Image and mask transforms
+transforms:
+  bias_field_range:
+  - -0.3
+  - 0.3
+  gamma_range:
+  - 0.5
+  - 4.5
+  pixdim:
+  - 2
+  - 2
+  - 2
+  prob_bias_field: 0.2
+  prob_contrast: 0.2
+  prob_zoom: 0.2
+  roi_size:
+  - 48
+  - 48
+  - 48
+  zoom_range:
+  - 0.9
+  - 1.1
+
+# ViT architecture
+vit: 
+  hidden_size: 768
+  in_channels: 1
+  mlp_dim: 3072
+  num_heads: 12
+  num_layers: 12
+  out_channels: 9
+  patch_size:
+  - 16
+  - 16
+  - 16
+  pos_embed_type: sincos
+  proj_type: conv
+  spatial_dims: 3
+  
+# ViT training
+train:
+  batch_size: 1024
+  epochs: 2500
+  learning_rate: 0.0001
+  weight_geodesic_loss: 0.1
+  weight_img_loss: 0.1
+  weight_point_loss: 0.01
+  weight_translation_loss: 0.01
+  rotate_range:
+  - 1.0
+  - 1.0
+  - 1.0
+  translate_range:
+  - 10.0
+  - 10.0
+  - 10.0
+  prob_roi_mask: 0.4
+  prob_background_mask: 0.4
+  prob_dilate: 1.0
+  prob_erode: 1.0
+  dilate_range: 
+  - 5
+  - 10
+  erode_range:
+  - 1
+  - 10
+  
+# ViT validation
+val:
+  num_val: 250
+  rotate_range:
+  - 1.0
+  - 1.0
+  - 1.0
+  translate_range:
+  - 5.0
+  - 5.0
+  - 5.0
+
+# ViT ensemble testing
+test:
+  num_test: 250
+  rotation_avg: "chordal"
+  rotate_range:
+  - 1.0
+  - 1.0
+  - 1.0
+  translate_range:
+  - 5.0
+  - 5.0
+  - 5.0
+

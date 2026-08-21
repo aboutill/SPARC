@@ -1,0 +1,26 @@
+# ViT architecture
+vit:
+  hidden_size: 768
+  in_channels: 1
+  mlp_dim: 3072
+  num_heads: 12
+  num_layers: 12
+  out_channels: 9
+  patch_size:
+  - 16
+  - 16
+  - 16
+  pos_embed_type: sincos
+  proj_type: conv
+  spatial_dims: 3
+
+# Image transform
+transforms:
+  pixdim:
+  - 2
+  - 2
+  - 2
+  roi_size:
+  - 48
+  - 48
+  - 48

@@ -1,0 +1,85 @@
+# Image and mask file extensions
+data:
+  img: mag.nii.gz
+  mask: mask_heart.nii.gz
+  
+# Image and mask transforms
+transforms:
+  bias_field_range:
+  - -0.3
+  - 0.3
+  gamma_range:
+  - 0.5
+  - 4.5
+  pixdim:
+  - 2
+  - 2
+  - 2
+  padd_mode: reflect
+  prob_affine: 0.2
+  prob_bias_field: 0.2
+  prob_contrast: 0.2
+  prob_flip:
+  - 0.2
+  - 0.2
+  - 0.2
+  roi_size:
+  - 48
+  - 48
+  - 48
+  rotate_range:
+  - 3.1415
+  - 3.1415
+  - 3.1415
+  scale_range:
+  - 0.1
+  - 0.1
+  - 0.1
+  translate_range:
+  - 10
+  - 10
+  - 10
+
+# UNet architecture  
+unet:
+  act: RELU
+  bias: false
+  channels:
+  - 16
+  - 32
+  - 64
+  - 128
+  - 256
+  in_channels: 1
+  kernel_size: 3
+  norm: BATCH
+  num_res_units: 0
+  out_channels: 1
+  spatial_dims: 3
+  strides:
+  - 2
+  - 2
+  - 2
+  - 2
+  up_kernel_size: 3
+  
+# UNet training 
+train:
+  batch_size: 64
+  epochs: 800
+  learning_rate: 0.001
+
+# Inferer
+inferer:
+  overlap: 0.25
+  padding_mode: reflect
+  roi_size:
+  - 48
+  - 48
+  - 48
+  sw_batch_size: 64
+
+# Post processing
+post_processing:
+  connectivity: null
+  num_components: 1
