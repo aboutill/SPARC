@@ -1,0 +1,64 @@
+# DICOM to nifti conversion and image preprocessing
+# Standard DICOM tag names are given as defaults below, confirm
+# these against your own actual DICOM export, particularly the
+# image-type/magnitude/phase flags, which can vary by vendor and
+# reconstruction settings.
+preprocessing:
+  img_type_dcm_tag: ImageType
+  mag_dcm_flag: M
+  pha_dcm_flag: P
+  rr_interval_dcm_tag: NominalInterval
+  stack_id_dcm_tag: SeriesNumber
+  acq_mat_dcm_tag: AcquisitionMatrix
+  slice_thickness_dcm_tag: SliceThickness
+  remove_zero_filling: false # Remove k-space zero-filling interpolation 
+  denoise: false # Apply PCA-based denoising
+  degibbs: false # Apply Gibbs correction
+  N4_corr: false # Apply N4 bias field correction on in put stacks
+
+# Chest segmentation
+chest_segmentation:
+  target_stack_orientation: null # Direction of target stack ("tra" [transverse], "cor" [coronal], "sag" [sagittal], null [indifferent])
+  models: siemens # pre-trained DL models ("philips", "siemens", "siemens_transfer", "joint", null if user-provided)
+  dil_rad: 3 # Dilation radius [mm]
+  dice_qc_thresh: 0.75 # Dice QC threshold in monitored_auto mode
+  hd_qc_thresh: 7.5 # HD QC threshold in monitored_auto mode [mm]
+
+# SVR-lite reconstruction
+svr:
+  resolution: 2 # Cine volume resolution [mm]
+  iterations: 4  # Number of registration-reconstruction iterations
+  sr_iterations: 22 # Number of super-resolution reconstruction iterations for last iteration
+  lambda_smooth: 0.03 # Edge-preserving regularisation strength
+  delta_edge: 175 # Edge-preserving regularisation intensity threshold
+  no_stack_zcrop: false # Disable cropping of stacks in the through-plane direction
+  mask_slices_not_svr: false # Mask slices everywhere except Slice-to-Volume registration
+  no_robust_statistics: true # Switch off robust statistics (false means ON)
+  no_intensity_matching: true # Switch off intensity matching (false means ON) 
+  N4_corr: false # Apply N4 bias field correction on output cine volume
+  smooth_roi_mask: false # Smooth thoracic ROI mask
+
+# Heart segmentation
+heart_segmentation:
+  activate: false # Run heart segmentation at all
+  activate_gui: true # Offer manual/semi-manual review of the heart mask
+  models: siemens # pre-trained DL models ("philips", "siemens", "siemens_transfer", "joint", null if user-provided)
+  dice_qc_thresh: 0.65 # Dice QC threshold in monitored_auto mode
+  hd_qc_thresh: 10.0 # HD QC threshold in monitored_auto mode [mm]
+
+# Cine reorientation
+reorientation:
+  models: siemens # pre-trained DL models ("philips", "siemens", "siemens_transfer", "joint", null if user-provided)
+  rotation_avg: quaternion # Rotation averaging method ("chordal", "quaternion", "geodesic")
+  reo_stacks: false # Reorient input stacks to fetal coordinate system
+  gd_qc_thresh: 35.0 # GD QC threshold in monitored_auto mode [DEGREES]
+  cd_qc_thresh: 10.0 # CD QC threshold in monitored_auto mode [mm]
+
+# Nifti to DICOM conversion
+postprocessing:
+  save_dcm_private_tags: false # Save Dicom private tags in an external .json file
+  zip_dcm_files: false # Compress dicom images in a .zip folder
+  ImplementationVersionName: KCL_PERINATAL # DICOM tags
+  ProtocolName: fCMR 4D magnitude
+  StudyDescription: PERINATAL RESEARCH - KCL
+  SeriesDescription: cine

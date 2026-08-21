@@ -1,0 +1,41 @@
+# =============================================================================
+# .gitignore for the SPARC package
+# =============================================================================
+
+# Python
+__pycache__/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data, nodels and output
+data/
+recon/
+models/
+
+# Experiments outputs
+experiments/train/
+experiments/test/
+
+# Test outputs
+tests/in/
+tests/models/
+tests/out/
+
+# Private
+src/svr-lite/
+
+# Generic
+*.dcm
+*.nii
+*.nii.gz
+*.pth
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.tmp
+tmp/

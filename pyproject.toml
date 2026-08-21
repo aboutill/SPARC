@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sparc"
+version = "1.0.0"
+description = "Slice-to-volume Pipeline for Automated Reconstruction of gated Cardiac cine (SPARC)"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "Arnaud Boutillon", email = "arnaud.boutillon@kcl.ac.uk" },
+]
+license = { text = "MIT" }
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[project.scripts]
+sparc = "sparc.bin.dispatch:main"
+pipeline = "sparc.bin.pipeline:main"
+train = "sparc.bin.train:main"
+test = "sparc.bin.test:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]

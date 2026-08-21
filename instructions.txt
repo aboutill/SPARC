@@ -1,0 +1,239 @@
+==============================================================================
+SPARC PIPELINE -- INSTRUCTIONS
+==============================================================================
+
+This file covers how to install and run the SPARC pipeline. 
+For additional documentation (training/testing your own models,
+reproducing the paper's statistical analysis), see README.md.
+
+Contact: Arnaud Boutillon (arnaud.boutillon@kcl.ac.uk)
+
+
+==============================================================================
+1. ONE-TIME SETUP
+==============================================================================
+
+You only need to do this once per machine.
+
+  1. Install Docker and, if you have a GPU, the NVIDIA Container
+     Toolkit. Confirm your GPU is visible to Docker:
+
+       docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi
+
+     If this doesn't list your GPU, fix that before continuing. The
+     pipeline will still run without it, but far more slowly.
+     
+     To run Docker without root privileges, create the docker group and add 
+     your user:
+       
+       sudo groupadd docker
+       sudo usermod -aG docker $USER
+       
+     Log out and log back in so that your group membership is re-evaluated.
+
+  2. Clone the repository and install:
+
+       git clone https://github.com/aboutill/SPARC.git
+       cd SPARC
+       make install
+
+     This adds the `SPARC` command to your PATH and pulls the Docker
+     image. Confirm it worked:
+
+       SPARC -h
+
+     If you see "SPARC: command not found", see TROUBLESHOOTING below.
+
+  3. If you plan to use custom or fine-tuned model weights rather than
+     the defaults, have their directory and configuration file paths
+     ready.
+
+
+==============================================================================
+2. RUNNING A CASE with runSPARC.bash
+==============================================================================
+
+This is a wrapper script provided for ease of use.
+
+  1. Open ./examples/runSPARC.bash in a text editor. Edit ONLY the
+     "USER INPUTS" section near the top:
+
+       input="data"               -- path to the input DICOM directory
+       output="recon"             -- path to write results to
+       subID=false                -- set to a subject ID string for a
+                                      single case, OR leave as false
+       batch=true                 -- set to true for batch processing
+                                      over every subdirectory of $input
+
+       *** Set exactly ONE of subID or batch=true. Do not set both. ***
+
+       mode="semi_auto"           -- see OPERATING MODES below
+       cfg="cfg/pipeline.yaml"    -- pipeline configuration file
+
+       verbose=false
+       profile=false
+       log=false
+       debug=false
+
+  2. Run it:
+
+       ./examples/runSPARC.bash
+
+  3. Depending on the selected mode, you may be prompted to review a
+     segmentation or reorientation result partway through, see
+     REVIEW / GUI below.
+
+
+==============================================================================
+3. RUNNING A CASE via CLI
+==============================================================================
+
+For a run via the CLI:
+
+  SPARC pipeline --input /path/to/dicom --output /path/to/results \
+                 --mode semi_auto
+
+Batch processing:
+
+  SPARC pipeline --input /path/to/dicom_root --output /path/to/results \
+                 --mode full_auto --batch
+
+Run `SPARC pipeline -h` to see every available option.
+
+
+==============================================================================
+4. OPERATING MODES
+==============================================================================
+
+  manual           Every stage is done/reviewed manually via ITK-SNAP.
+
+  semi_auto        Automatic segmentation/reorientation runs first, but
+                    you are ALWAYS asked to review and accept/refine the
+                    result before the pipeline continues.
+
+  monitored_auto   Fully automatic, EXCEPT a stage whose automated
+                    quality-control check fails is flagged for your
+                    review. Passing stages proceed with no interruption.
+
+  full_auto        Fully automatic, no review at all. Use this for large
+                    batch/retrospective processing.
+
+If you're not sure which to use: semi_auto for a handful of cases you
+want to check carefully; full_auto for a large batch, with the QC
+reports checked afterwards (see OUTPUT STRUCTURE below).
+
+
+==============================================================================
+5. REVIEW / GUI
+==============================================================================
+
+When a mode calls for review, the pipeline can present it two ways,
+controlled by --gui_mode (default: docker):
+
+  --gui_mode docker    Launches ITK-SNAP inside the container, forwarded
+                       to your display.
+
+  --gui_mode native    Intended to let you review using a native
+                       ITK-SNAP install on your own machine instead of
+                       one launched inside the container.
+
+By default, the pipeline runs in semi_auto mode, and ITK-SNAP will
+open at four stages so you can check the input data and deep-learning
+network's output:
+
+  1) Right after preprocessing, an optional manual stack review can be 
+     performed. For each stack, ITK-SNAP will open:
+       a. Stack inclusion or exclusion. Exclude if there is too
+          much motion-corruption.
+       b. Diastole frame index identification for included stacks. 
+          The cardiac phases are then temporally aligned among all 
+          included stack.
+
+  2) Thoracic segmentation on the template stack. Check that the
+     heart is fully included in the mask, and that the template stack
+     itself isn't badly corrupted by motion.
+
+  3) Cardiac segmentation on the reconstructed volume. This is only
+     used to estimate the heart's centre of mass ahead of reorientation,
+     so it doesn't need to be precise; a rough mask is fine.
+
+  4) Reorientation validation. If the automatic result needs
+     correcting, you can manually re-align it directly in ITK-SNAP:
+       a. Open the registration menu (Ctrl+R).
+       b. Select the second image, then choose 'Manual' in the
+          top-right of the registration menu.
+       c. A graduated circle appears in each of the axial, coronal,
+          and sagittal views. Use these to rotate the image in each
+          of the three directions until it's correctly aligned.
+          Correct rotations only, not translations.
+       d. Click the save icon (floppy disc, bottom-right of the
+          registration menu) to save.
+       e. This overwrites itksnap_affine.txt with the corrected
+          affine matrix. Keep that exact filename so the pipeline
+          picks up your correction.
+
+What to expect during a review step (docker mode):
+
+  - ITK-SNAP will open automatically with the relevant image and the
+    automatically-generated mask/segmentation loaded.
+  - The terminal will tell you the exact filename to save your edited
+    result as, if you're making changes. Save under that exact name.
+  - Back in the terminal, you'll be asked to validate:
+      y = accept (and use your edits, if you saved any)
+      n = reject and try the next candidate
+      q = quit the pipeline run entirely for this case
+  - If you press q, the run stops for that case. Nothing after that
+    point is produced. For a batch run, other cases are unaffected.
+    
+
+==============================================================================
+6. OUTPUT STRUCTURE
+==============================================================================
+
+For a case run with --output <output_dir> (and --file_prefix <prefix>
+if set), you'll find:
+
+  <output_dir>/
+    stacks_nii/      -- preprocessed NIfTI stacks
+    chest_mask/      -- thoracic segmentation + its QC report
+    cine_nii/        -- reconstructed and reoriented 3D+time cine volume
+    heart_mask/      -- cardiac segmentation + its QC report (if enabled)
+    cine_dcm/        -- final DICOM series
+    <prefix>_qc.yaml -- combined quality-control summary for the case
+    <prefix>.log     -- run log (only if --log was set)
+
+For a batch run, check <prefix>_qc.json for every case before assuming
+a full_auto batch completed cleanly, a case can complete without
+error but still have a QC flag worth a manual look.
+
+
+==============================================================================
+7. CONFIGURATION
+==============================================================================
+
+The pipeline's behaviour is set in cfg/pipeline.yaml (documented inline).
+If you're running on data from a new scanner/site, check the "preprocessing" 
+section first. The DICOM tag names used to identify magnitude/phase images,
+RR intervals, and acquisition parameters can vary by vendor.
+
+To use a different configuration file for a run, edit the `cfg`
+variable in runSPARC.bash, or pass --cfg directly.
+
+
+==============================================================================
+8. TROUBLESHOOTING
+==============================================================================
+
+"SPARC: command not found"
+  1. Check the symlink exists:  ls -la ~/.local/bin/SPARC
+     (or wherever you installed it, see PREFIX in the Makefile)
+  2. Check that location is on your PATH:
+       echo $PATH | tr ':' '\n' | grep local/bin
+     If nothing prints, either add it to your shell rc file, or run
+     `make install-path`, or reinstall system-wide:
+       sudo make install PREFIX=/usr/local/bin
+
+ITK-SNAP doesn't open during review
+  Make sure your display forwarding is set up correctly for Docker on
+  your machine (X11 forwarding on Linux; consult your machine's
+  specific setup notes). As a fallback, set gui_mode="native".

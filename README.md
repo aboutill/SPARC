@@ -9,16 +9,22 @@
 SPARC combines a physics-informed slice-to-volume reconstruction (SVR) algorithm with deep learning (segmentation and reorientation) models to turn raw, Doppler-gated MRI acquisitions into a reoriented, DICOM-ready 3D+time cine volume of the fetal heart, with automated quality control at every stage and a human-in-the-loop review workflow when it's needed.
 
 <p align="center">
-  <img src="docs/demo.gif" width="700">
+  <img src="docs/SPARC-demo.gif" width="700">
 </p>
 
 ---
-
+ 	
 ## Preamble
 
-The SPARC pipeline is a research software developed alongside the following: TBD. The pipeline is used to generate the results reported in that manuscript, and this repository is intended to support their reproduction.
+The SPARC pipeline is a research software developed alongside the following: [10.48550/arXiv.2608.18616](https://doi.org/10.48550/arXiv.2608.18616). The pipeline is used to generate the results reported in that manuscript, and this repository is intended to support their reproduction.
 
 The 3D+time SVR algorithm is a physics-based method (unlike this pipeline's deep-learning segmentation and reorientation components, it requires no domain-specific training) and is maintained as a separate, general-purpose project: [https://github.com/baby-MedIA/svr-lite](https://github.com/baby-MedIA/svr-lite).
+
+The pipeline leverages a recently introduced, CE-marked Doppler ultrasound device [10.2463/mrms.mp.2017-0100](https://doi.org/10.2463/mrms.mp.2017-0100) used to gate the acquisiton of balanced steady-state free precession (bSSFP) sequence. This process produces stacks of doppler-ultrasound (DUS) gated 2D+time slices as seen below:
+
+<p align="center">
+  <img src="docs/SPARC-acq.png" width="700">
+</p>
 
 ---
 
@@ -57,6 +63,11 @@ Full methodology, statistical testing, and quality-control analysis are describe
 
 ## Pipeline overview
 
+<p align="center">
+  <img src="docs/SPARC-pipeline.png" width="700">
+</p>
+
+
 SPARC runs as six stages, each with its own automated quality control:
 
 1. **Preprocessing**: DICOM → NIfTI conversion, denoising, Gibbs-ringing and bias-field correction, RR-interval extraction from the Doppler-gating device, with an optional interactive review to exclude motion-corrupted stacks and align each stack's cardiac phase to a common diastolic reference frame.
@@ -72,7 +83,7 @@ Every automated stage produces a quality-control report (inter-model agreement m
 
 ## Requirements
 
-- **Docker [Docker Engine](https://docs.docker.com/engine/install/)**.
+- **[Docker Engine](https://docs.docker.com/engine/install/)**.
 - **NVIDIA GPU + [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)**, strongly recommended. The pipeline will run on CPU, but deep-learning inference/training will be substantially slower.
 - **`make`** for installation.
 
@@ -185,10 +196,10 @@ SPARC test --input /data/test --output /results/test \
 Pretrained models can be downloaded via:
 
 ```bash
-SPARC download-models
+SPARC download-models --output /path/to/pretrained
 ```
 
-Run `SPARC train -h` / `SPARC test -h` for the full set of options.
+Run `SPARC train -h` / `SPARC test -h / SPARC download-models -h` for the full set of options.
 
 ---
 
@@ -202,9 +213,7 @@ The training runs behind the paper's reported results — source-only, target-on
 
 ### Statistical analysis
 
-Jupyter notebooks reproducing the statistical analysis and figures reported in the manuscript are provided under [`notebooks/`](notebooks/).
-
-See [`notebooks/README.md`](notebooks/README.md) for a table mapping each notebook to the specific result it reproduces in the manuscript.
+Jupyter notebooks reproducing the statistical analysis reported in the manuscript are provided under [`notebooks/`](notebooks/).
 
 **Running the notebooks.** They run inside the same Docker image as the rest of the pipeline:
 
@@ -222,12 +231,14 @@ This launches Jupyter inside the container (forwarded to `http://localhost:8888`
 SPARC/
 ├── cfg/               # Pipeline and model configuration
 ├── conf/              # Invocation configuration
-├── docs/
+├── docs/              # Repository documentation
+├── examples/          # Example wrappers
 ├── notebooks/         # Jupyter notebooks reproducing the statistical analysis
 ├── experiments/       # Experiments script behind the reported results
 ├── scripts/           # Bash entry points and the SPARC dispatcher
 ├── src/sparc/         # Python package (pipeline, DL models, CLI)
 ├── tests/             # Tests script for every major CLI usage pattern
+├── ARCHITECTURE.md
 ├── Dockerfile
 ├── instructions.txt
 ├── LICENSE.md
@@ -244,7 +255,7 @@ SPARC/
 
 If you use SPARC in your research, please cite:
 
-1. A. Boutillon, N. Clarke *et al.*, "SPARC: Slice-to-volume Pipeline for Automated Reconstruction of gated 3D+time fetal Cardiac MRI," 2026. Preprint
+1. A. Boutillon, N. Clarke *et al.*, "SPARC: Slice-to-volume Pipeline for Automated Reconstruction of gated 3D+time fetal Cardiac MRI," 2026. Preprint, DOI: [10.48550/arXiv.2608.18616](https://doi.org/10.48550/arXiv.2608.18616)
 2. A. Boutillon, N. Clarke *et al.*, "Automated reconstruction of 3D+time fetal cardiac MRI from stacks of Doppler-gated slices," *ISMRM*, 2024. DOI: [10.58530/2025/3617](https://doi.org/10.58530/2025/3617)
 
 
@@ -255,4 +266,3 @@ If you use SPARC in your research, please cite:
 **Arnaud Boutillon** — arnaud.boutillon@kcl.ac.uk
 
 **Naomi Clarke** — naomi.5.clarke@kcl.ac.uk
-

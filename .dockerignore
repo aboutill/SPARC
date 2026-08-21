@@ -1,0 +1,33 @@
+# =============================================================================
+# .dockerignore for the SPARC package
+#
+# =============================================================================
+
+# Host
+/cfg/
+/conf/
+/data/
+/docs/
+/examples/
+/experiments/
+/models/
+/notebooks/
+/recon/
+/scripts/
+/tests/
+/ARCHITECTURE.md
+/README.md
+/instructions.txt
+/LICENSE.md
+/Makefile
+/.dockerignore
+.gitignore
+.git/
+
+# Python and Jupyter cache
+__pycache__/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

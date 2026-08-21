@@ -1,0 +1,137 @@
+==============================================================================
+SPARC PIPELINE -- ABRIDGED INSTRUCTIONS
+==============================================================================
+
+This file covers how to run the SPARC pipeline through the runSPARC.bash
+wrapper script. KCL internal documentation.
+
+Contact: Arnaud Boutillon (arnaud.boutillon@kcl.ac.uk)
+
+
+==============================================================================
+1. RUNNING A CASE with runSPARC.bash
+==============================================================================
+
+This is a wrapper script provided for ease of use.
+
+  1. Open ./scripts/runSPARC.bash in a text editor. Edit ONLY the
+     "USER INPUTS" section near the top:
+
+       input="data"               -- path to the input DICOM directory
+       output="recon"             -- path to write results to
+       subID=false                -- set to a subject ID string for a
+                                      single case, OR leave as false
+       batch=true                 -- set to true for batch processing
+                                      over every subdirectory of $input
+
+       *** Set exactly ONE of subID or batch=true. Do not set both. ***
+
+       mode="semi_auto"           -- see OPERATING MODES below
+       cfg="cfg/pipeline.yaml"    -- pipeline configuration file
+
+       verbose=false
+       profile=false
+       log=false
+       debug=false
+
+  2. Run it:
+
+       ./scripts/runSPARC.bash
+
+  3. Depending on the selected mode, you may be prompted to review a
+     segmentation or reorientation result partway through, see
+     REVIEW / GUI below.
+
+
+==============================================================================
+2. OPERATING MODES
+==============================================================================
+
+  manual           Every stage is done/reviewed manually via ITK-SNAP.
+
+  semi_auto        Automatic segmentation/reorientation runs first, but
+                    you are ALWAYS asked to review and accept/refine the
+                    result before the pipeline continues.
+
+  monitored_auto   Fully automatic, EXCEPT a stage whose automated
+                    quality-control check fails is flagged for your
+                    review. Passing stages proceed with no interruption.
+
+  full_auto        Fully automatic, no review at all. Use this for large
+                    batch/retrospective processing.
+
+
+==============================================================================
+3. REVIEW / GUI
+==============================================================================
+
+By default, the pipeline runs in semi_auto mode, and ITK-SNAP will
+open at four stages so you can check the input data and deep-learning
+network's output:
+
+  1) Right after preprocessing, an optional manual stack review can be 
+     performed. For each stack, ITK-SNAP will open:
+       a. Stack inclusion or exclusion. Exclude if there is too
+          much motion-corruption.
+       b. Diastole frame index identification for included stacks. 
+          The cardiac phases are then temporally aligned among all 
+          included stack.
+
+  2) Thoracic segmentation on the template stack. Check that the
+     heart is fully included in the mask, and that the template stack
+     itself isn't badly corrupted by motion.
+
+  3) Cardiac segmentation on the reconstructed volume. This is only
+     used to estimate the heart's centre of mass ahead of reorientation,
+     so it doesn't need to be precise; a rough mask is fine.
+
+  4) Reorientation validation. If the automatic result needs
+     correcting, you can manually re-align it directly in ITK-SNAP:
+       a. Open the registration menu (Ctrl+R).
+       b. Select the second image, then choose 'Manual' in the
+          top-right of the registration menu.
+       c. A graduated circle appears in each of the axial, coronal,
+          and sagittal views. Use these to rotate the image in each
+          of the three directions until it's correctly aligned.
+       d. Click the save icon (floppy disc, bottom-right of the
+          registration menu) to save.
+       e. This overwrites itksnap_affine.txt with the corrected
+          affine matrix. Keep that exact filename so the pipeline
+          picks up your correction.
+
+What to expect during a review step (docker mode):
+
+  - ITK-SNAP will open automatically with the relevant image and the
+    automatically-generated mask/segmentation loaded.
+  - The terminal will tell you the exact filename to save your edited
+    result as, if you're making changes. Save under that exact name.
+  - Back in the terminal, you'll be asked to validate:
+      y = accept (and use your edits, if you saved any)
+      n = reject and try the next candidate
+      q = quit the pipeline run entirely for this case
+  - If you press q, the run stops for that case. Nothing after that
+    point is produced. For a batch run, other cases are unaffected.
+
+
+==============================================================================
+4. OUTPUT STRUCTURE
+==============================================================================
+
+For a case run with --output <output_dir> (and --file_prefix <prefix>
+if set), you'll find:
+
+  <output_dir>/
+    stacks_nii/      -- preprocessed NIfTI stacks
+    chest_mask/      -- thoracic segmentation + its QC report
+    cine_nii/        -- reconstructed and reoriented 3D+time cine volume
+    heart_mask/      -- cardiac segmentation + its QC report (if enabled)
+    cine_dcm/        -- final DICOM series
+    <prefix>_qc.yaml -- combined quality-control summary for the case
+    <prefix>.log     -- run log (only if --log was set)
+
+
+==============================================================================
+5. CONFIGURATION
+==============================================================================
+
+The pipeline's behaviour is set in cfg/pipeline.yaml (documented inline).
