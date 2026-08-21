@@ -103,7 +103,7 @@ run_test "Test 7: manual stack review" \
   --input="${INPUT_DIR}/${SUB_ID}" \
   --output="${OUTPUT_DIR}/${SUB_ID}_007" \
   --file_prefix="${SUB_ID}" \
-  --mode="semi_manual" \
+  --mode="semi_auto" \
   --manual_stack_review
   
 cfgs=("pipeline1" "pipeline2")
