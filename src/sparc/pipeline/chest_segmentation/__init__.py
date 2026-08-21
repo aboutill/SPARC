@@ -99,50 +99,59 @@ class ChestSegmentator:
             stack_pha_nii_paths,
             stack_infos,
         ):
-        """Rank candidate stacks by z-smoothness (ascending, best first),
-        excluding stacks that would be too small at the U-Net's target
-        resolution or (if configured) don't match the required
-        orientation. Excluded stacks are sorted last.
+        """Rank all candidate stacks in one combined priority order:
+        correctly-oriented, adequately-sized stacks first (best-to-worst
+        by z-smoothness), then any remaining wrong-orientation,
+        adequately-sized stacks as a fallback tier (also best-to-worst),
+        then too-small stacks last (order among these doesn't matter --
+        they are never selected downstream; see unet_too_small).
         """
         strides = self.unet_cfg["strides"]
         thresh = np.prod(strides)
         unet_pixdim = self.transforms_cfg["pixdim"]
-    
-        z_smooths = []
+        
+        z_smooth_raws = []
+        groups = []
         for stack_info in stack_infos:
-    
+        
             dim = stack_info["dim"]
             img_pixdim = stack_info["pixdim"]
             unet_dim = [
                 int(img_pixdim[axis] * dim[axis] / unet_pixdim[axis])
                 for axis in range(len(unet_pixdim))
             ]
-    
+        
             too_small = any(2*d < thresh for d in unet_dim)
             wrong_orientation = (
                 self.target_stack_orientation is not None
                 and self.target_stack_orientation != stack_info["ornt"]
             )
-    
+        
             true_z_smooth = stack_info.get("z_smooth_raw", stack_info["z_smooth"])
             stack_info["z_smooth_raw"] = true_z_smooth
-    
+        
             z_smooth = float("inf") if (too_small or wrong_orientation) else true_z_smooth
             stack_info["z_smooth"] = z_smooth
-            z_smooths.append(z_smooth)
-    
-        idx = np.argsort(z_smooths)
-    
-        if not np.isfinite(z_smooths[idx[0]]):
-            raise ValueError(
-                "No candidate stack meets the size/orientation criteria "
-                f"(thresh={thresh}, target_orientation={self.target_stack_orientation})."
-            )
-    
+            stack_info["unet_too_small"] = too_small
+        
+            z_smooth_raws.append(true_z_smooth)
+        
+            if too_small:
+                group = 2
+            elif wrong_orientation:
+                group = 1
+            else:
+                group = 0
+            groups.append(group)
+        
+        # group is primary, z_smooth_raw is secondary (breaks ties WITHIN
+        # each group).
+        idx = np.lexsort((z_smooth_raws, groups))
+        
         stack_mag_nii_paths = [stack_mag_nii_paths[i] for i in idx]
         stack_pha_nii_paths = [stack_pha_nii_paths[i] for i in idx]
         stack_infos = [stack_infos[i] for i in idx]
-    
+        
         return stack_mag_nii_paths, stack_pha_nii_paths, stack_infos
     
     

@@ -161,16 +161,35 @@ def chest_segmentation_gui(
         profile=False,
         debug=False,
     ):
-    """Interactive chest-mask review/refinement loop: launch ITK-SNAP
-    on the current candidate stack, ask the user to validate; on
-    rejection, try automatic segmentation on the next candidate stack
-    (if any remain).
+    """Interactive chest-mask review/refinement loop.
+
+    Candidates are tried in one combined order: target-orientation
+    stacks first, then (if those are exhausted) every remaining
+    stack, best-to-worst by z_smooth_raw. Stacks flagged unet_too_small 
+    are skipped in either group, including as the very first candidate shown.
     """
     
-    idx = 0
+    candidate_order = list(range(len(stack_infos)))
+
+    def _next_candidate(order_pos):
+        """First position >= order_pos whose stack isn't
+        unet_too_small, or None if none remain."""
+        while order_pos < len(candidate_order):
+            if not stack_infos[candidate_order[order_pos]]["unet_too_small"]:
+                return order_pos
+            order_pos += 1
+        return None
+
+    order_pos = _next_candidate(0)
+    if order_pos is None:
+        logging.info(
+            f"No candidate stack left "
+            f"(target_orientation={self.chest_segmentator.target_stack_orientation})"
+        )
+        return None, None
+    idx = candidate_order[order_pos]
     img_path = stack_nii_paths[idx]
     mask_path = chest_mask_path
-    n = sum(info["z_smooth"] < float("inf") for info in stack_infos)
  
     user_val = False
     tgt_mask = None
@@ -258,16 +277,15 @@ def chest_segmentation_gui(
             if self.mode != "manual":
                 self._check_file(manual_mask_path, copy_time)
  
-            idx += 1
-            if idx == n:
+            order_pos = _next_candidate(order_pos + 1)
+            if order_pos is None:
                 logging.info(
-                    f"No ornt={self.chest_segmentator.target_stack_orientation} "
-                    f"candidate stack left"
+                    f"No candidate stack left "
+                    f"(target_orientation={self.chest_segmentator.target_stack_orientation})"
                 )
-            if idx == len(stack_nii_paths):
-                logging.info("No candidate stack left")
                 return None, None
- 
+            idx = candidate_order[order_pos]
+
             img_path = stack_nii_paths[idx]
  
             if self.mode != "manual":
