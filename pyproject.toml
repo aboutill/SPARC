@@ -17,6 +17,9 @@ dynamic = ["dependencies"]
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
 
+[tool.setuptools.package-data]
+sparc = ["cfg/*.yaml", "cfg/*.xml", "pipeline/*/models/*.yaml"]
+
 [project.scripts]
 sparc = "sparc.bin.dispatch:main"
 pipeline = "sparc.bin.pipeline:main"
