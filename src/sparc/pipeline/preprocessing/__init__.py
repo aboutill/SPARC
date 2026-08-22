@@ -1,8 +1,6 @@
-        
 class PreProcessor:
-    
     """Preprocess a subject's raw DICOM cine stacks into NIfTI volumes."""
-    
+
     from ._run import (
         run,
         run_with_gui,
@@ -34,23 +32,22 @@ class PreProcessor:
     )
     from ._gui import stack_review_gui
 
-    
     def __init__(
-            self,
-            img_type_dcm_tag=None,
-            mag_dcm_flag=None,
-            pha_dcm_flag=None,
-            rr_interval_dcm_tag=None,
-            stack_id_dcm_tag=None,
-            acq_mat_dcm_tag=None,
-            slice_thickness_dcm_tag=None,
-            remove_zero_filling=False,
-            denoise=False,
-            degibbs=False,
-            N4_corr=False,
-        ):
+        self,
+        img_type_dcm_tag=None,
+        mag_dcm_flag=None,
+        pha_dcm_flag=None,
+        rr_interval_dcm_tag=None,
+        stack_id_dcm_tag=None,
+        acq_mat_dcm_tag=None,
+        slice_thickness_dcm_tag=None,
+        remove_zero_filling=False,
+        denoise=False,
+        degibbs=False,
+        N4_corr=False,
+    ):
         """Configure preprocessing behaviour for a subject's DICOM input."""
-        
+
         # DICOM tags
         self.img_type_dcm_tag = img_type_dcm_tag
         self.mag_dcm_flag = mag_dcm_flag
@@ -59,7 +56,7 @@ class PreProcessor:
         self.stack_id_dcm_tag = stack_id_dcm_tag
         self.acq_mat_dcm_tag = acq_mat_dcm_tag
         self.slice_thickness_dcm_tag = slice_thickness_dcm_tag
-        
+
         # Image processing
         self.remove_zero_filling = remove_zero_filling
         self.denoise = denoise

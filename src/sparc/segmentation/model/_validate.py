@@ -2,17 +2,17 @@ import os
 import torch
 
 from monai.transforms import (
-    Compose, 
-    AsDiscreted, 
-    Activationsd, 
-    SaveImaged, 
-    Invertd, 
+    Compose,
+    AsDiscreted,
+    Activationsd,
+    SaveImaged,
+    Invertd,
     KeepLargestConnectedComponentd,
 )
 from monai.handlers import (
-    MetricsSaver, 
-    MeanDice, 
-    HausdorffDistance, 
+    MetricsSaver,
+    MeanDice,
+    HausdorffDistance,
     SurfaceDistance,
 )
 from monai.handlers.utils import from_engine
@@ -21,27 +21,27 @@ from monai.data import DataLoader
 
 
 def validate(
-        self,
-        val_ds, 
-        num_components=1, 
-        connectivity=None, 
-        workers=8,
-    ):
+    self,
+    val_ds,
+    num_components=1,
+    connectivity=None,
+    workers=8,
+):
     """Load the best checkpoint, run inference, and save
     predictions plus Dice/HD95/ASSD metrics."""
-    
+
     # Load weights
     if os.path.exists(self.model_path):
         self.net.load_state_dict(torch.load(self.model_path))
-    
+
     # Initialize data loader
     val_loader = DataLoader(
-        dataset=val_ds, 
+        dataset=val_ds,
         batch_size=1,
-        shuffle=False, 
+        shuffle=False,
         num_workers=workers,
     )
-    
+
     # Initialise multi-class options
     if self.out_channels == 1:
         sigmoid = True
@@ -59,7 +59,7 @@ def validate(
         to_onehot = self.out_channels
         include_background = False
         is_onehot = True
-    
+
     # Initialize post prediction transformation
     post_transforms = Compose(
         [
@@ -77,34 +77,34 @@ def validate(
             AsDiscreted(keys="pred", threshold=threshold, argmax=argmax, to_onehot=to_onehot),
             AsDiscreted(keys="label", to_onehot=to_onehot),
             KeepLargestConnectedComponentd(
-                keys="pred", 
+                keys="pred",
                 num_components=num_components,
                 connectivity=connectivity,
                 is_onehot=is_onehot,
             ),
             SaveImaged(
-                keys="pred", 
-                meta_keys="pred_meta_dict", 
+                keys="pred",
+                meta_keys="pred_meta_dict",
                 folder_layout=self.prediction_layout,
             ),
         ]
     )
-    
+
     # Validation handler
     val_handlers = [
         MetricsSaver(
-            save_dir=self.metrics_dir, 
+            save_dir=self.metrics_dir,
             metrics=[
-                "val_mean_dice", 
-                "val_hausdorff_distance", 
+                "val_mean_dice",
+                "val_hausdorff_distance",
                 "val_surface_distance",
             ],
             metric_details="*",
             batch_transform=from_engine("image_meta_dict"),
-            summary_ops="*"
-        ),   
+            summary_ops="*",
+        ),
     ]
-    
+
     # Validation engine
     evaluator = SupervisedEvaluator(
         device=self.device,
@@ -128,8 +128,8 @@ def validate(
                 symmetric=True,
             ),
         },
-        val_handlers=val_handlers   
+        val_handlers=val_handlers,
     )
-    
+
     # Perform evaluation
     evaluator.run()

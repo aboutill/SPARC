@@ -4,11 +4,7 @@ from importlib.metadata import entry_points
 
 def _discover():
     eps = entry_points(group="console_scripts")
-    return {
-        ep.name: ep
-        for ep in eps
-        if ep.module.startswith("sparc") and ep.name != "sparc"
-    }
+    return {ep.name: ep for ep in eps if ep.module.startswith("sparc") and ep.name != "sparc"}
 
 
 def main():

@@ -10,19 +10,19 @@ from sparc.reorientation.transforms import init_test_transforms
 
 
 def _ensemble_prediction(
-        self,
-        test_ds,
-        workers=8, 
-        rotation_avg="chordal", 
-        qc_report_path=None,
-    ):
+    self,
+    test_ds,
+    workers=8,
+    rotation_avg="chordal",
+    qc_report_path=None,
+):
     """Run ensemble pose prediction on a single-item test_ds.
 
     Returns (avg_affine_matrix, affine_matrices) as (4,4) and
     (n_models,4,4) numpy arrays."""
-    assert len(test_ds) == 1, (
-        f"_ensemble_prediction expects a single-item test_ds, got {len(test_ds)} items."
-    )
+    assert (
+        len(test_ds) == 1
+    ), f"_ensemble_prediction expects a single-item test_ds, got {len(test_ds)} items."
 
     test_loader = DataLoader(
         dataset=test_ds,
@@ -44,7 +44,7 @@ def _ensemble_prediction(
             affine_matrices=affine_matrices,
             output_path=qc_report_path,
         )
-        
+
     avg_affine_matrix = avg_affine_matrix.squeeze(0).cpu().numpy()  # (4, 4)
     affine_matrices = affine_matrices.squeeze(1).cpu().numpy()
 
@@ -52,17 +52,17 @@ def _ensemble_prediction(
 
 
 def _ensemble_prediction_batch_with_sampling(
-        self,
-        img,
-        file_paths,
-        test_step,
-        metrics_raw_df,
-        indiv_metrics_raw_df=None,
-        qc_raw_df=None,
-        rotate_range=None,
-        translate_range=None,
-        rotation_avg="chordal",
-    ):
+    self,
+    img,
+    file_paths,
+    test_step,
+    metrics_raw_df,
+    indiv_metrics_raw_df=None,
+    qc_raw_df=None,
+    rotate_range=None,
+    translate_range=None,
+    rotation_avg="chordal",
+):
     """Simulate an independent random ground-truth pose per sample in
     the batch, run ensemble inference, record metrics, and return a
     list of per-sample dicts (and, if requested, per-sample lists of
@@ -73,7 +73,9 @@ def _ensemble_prediction_batch_with_sampling(
 
     # Each sample now gets its own independent pose.
     affine_matrix, (angle, t) = model.init_affine_matrix(
-        n=batch_size, r_range=rotate_range, t_range=translate_range,
+        n=batch_size,
+        r_range=rotate_range,
+        t_range=translate_range,
     )
     inv_affine_matrix = model.invert_affine_matrix(affine_matrix)
 
@@ -99,7 +101,7 @@ def _ensemble_prediction_batch_with_sampling(
     cd = model.centre_distance(t_gt, t_pred, reduction="none")
 
     avg_affine_matrix_np = avg_affine_matrix.detach().cpu().numpy()  # (batch, 4, 4)
-    points_pred_np = points_pred.detach().cpu().numpy()              # (batch, ...)
+    points_pred_np = points_pred.detach().cpu().numpy()  # (batch, ...)
 
     per_sample_arrs = []
     for b in range(batch_size):
@@ -110,15 +112,19 @@ def _ensemble_prediction_batch_with_sampling(
         metrics_raw_df["center-distance"].append(cd[b].item())
         metrics_raw_df["step"].append(test_step)
 
-        per_sample_arrs.append({
-            "img_gt": img_gt_np[b],
-            "img_def": img_def_np[b],
-            "img_pred": img_pred_np[b],
-            "affine_matrix": avg_affine_matrix_np[b],
-            "anchor_points": points_pred_np[b],
-        })
+        per_sample_arrs.append(
+            {
+                "img_gt": img_gt_np[b],
+                "img_def": img_def_np[b],
+                "img_pred": img_pred_np[b],
+                "affine_matrix": avg_affine_matrix_np[b],
+                "anchor_points": points_pred_np[b],
+            }
+        )
 
-    per_sample_indiv_arrs = [[] for _ in range(batch_size)] if indiv_metrics_raw_df is not None else None
+    per_sample_indiv_arrs = (
+        [[] for _ in range(batch_size)] if indiv_metrics_raw_df is not None else None
+    )
 
     if indiv_metrics_raw_df is not None or qc_raw_df is not None:
         if indiv_metrics_raw_df is not None:
@@ -135,7 +141,9 @@ def _ensemble_prediction_batch_with_sampling(
 
                 img_pred_i_np = img_pred_i.detach().cpu().numpy().squeeze(1)
                 affine_matrix_pred_i_np = affine_matrix_pred_i.detach().cpu().numpy()
-                points_pred_i_np = model_i.matrix_to_points(affine_matrix_pred_i).detach().cpu().numpy()
+                points_pred_i_np = (
+                    model_i.matrix_to_points(affine_matrix_pred_i).detach().cpu().numpy()
+                )
 
                 for b in range(batch_size):
                     indiv_metrics_raw_df[i]["filename"].append(file_paths[b])
@@ -145,13 +153,15 @@ def _ensemble_prediction_batch_with_sampling(
                     indiv_metrics_raw_df[i]["center-distance"].append(cd_i[b].item())
                     indiv_metrics_raw_df[i]["step"].append(test_step)
 
-                    per_sample_indiv_arrs[b].append({
-                        "img_gt": img_gt_np[b],
-                        "img_def": img_def_np[b],
-                        "img_pred": img_pred_i_np[b],
-                        "affine_matrix": affine_matrix_pred_i_np[b],
-                        "anchor_points": points_pred_i_np[b],
-                    })
+                    per_sample_indiv_arrs[b].append(
+                        {
+                            "img_gt": img_gt_np[b],
+                            "img_def": img_def_np[b],
+                            "img_pred": img_pred_i_np[b],
+                            "affine_matrix": affine_matrix_pred_i_np[b],
+                            "anchor_points": points_pred_i_np[b],
+                        }
+                    )
 
         if qc_raw_df is not None:
             gds, cds = self.quality_control(affine_matrix_preds)
@@ -167,16 +177,16 @@ def _ensemble_prediction_batch_with_sampling(
 
 
 def _ensemble_prediction_step_with_sampling(
-        self,
-        test_loader,
-        test_step,
-        metrics_raw_df,
-        indiv_metrics_raw_df=None,
-        qc_raw_df=None,
-        rotation_avg="chordal",
-        rotate_range=None,
-        translate_range=None,
-    ):
+    self,
+    test_loader,
+    test_step,
+    metrics_raw_df,
+    indiv_metrics_raw_df=None,
+    qc_raw_df=None,
+    rotation_avg="chordal",
+    rotate_range=None,
+    translate_range=None,
+):
     """Run one simulated-pose evaluation step over every subject in
     test_loader, saving predictions and recording metrics."""
     n_models = len(self.models)
@@ -187,10 +197,15 @@ def _ensemble_prediction_step_with_sampling(
         file_paths = batch["image_meta_dict"]["filename_or_obj"]
 
         per_sample_arrs, per_sample_indiv_arrs = self._ensemble_prediction_batch_with_sampling(
-            img=img, file_paths=file_paths, test_step=test_step,
-            metrics_raw_df=metrics_raw_df, indiv_metrics_raw_df=indiv_metrics_raw_df,
-            qc_raw_df=qc_raw_df, rotation_avg=rotation_avg,
-            rotate_range=rotate_range, translate_range=translate_range,
+            img=img,
+            file_paths=file_paths,
+            test_step=test_step,
+            metrics_raw_df=metrics_raw_df,
+            indiv_metrics_raw_df=indiv_metrics_raw_df,
+            qc_raw_df=qc_raw_df,
+            rotation_avg=rotation_avg,
+            rotate_range=rotate_range,
+            translate_range=translate_range,
         )
 
         for b, (file_path, arrs) in enumerate(zip(file_paths, per_sample_arrs)):
@@ -208,16 +223,16 @@ def _ensemble_prediction_step_with_sampling(
 
 
 def _ensemble_prediction_with_sampling(
-        self,
-        test_ds,
-        save_qc=False,
-        save_indiv=False,
-        num_test=5,
-        rotation_avg="chordal",
-        rotate_range=None,
-        translate_range=None,
-        workers=8,
-    ):
+    self,
+    test_ds,
+    save_qc=False,
+    save_indiv=False,
+    num_test=5,
+    rotation_avg="chordal",
+    rotate_range=None,
+    translate_range=None,
+    workers=8,
+):
     """Run repeated simulated-pose evaluation passes over test_ds,
     saving predictions, metrics, and (optionally) per-model outputs
     and inter-model QC.
@@ -235,9 +250,9 @@ def _ensemble_prediction_with_sampling(
         self.indiv_metrics_dirs = None
 
     test_loader = DataLoader(
-        dataset=test_ds, 
-        batch_size=len(test_ds), 
-        shuffle=False, 
+        dataset=test_ds,
+        batch_size=len(test_ds),
+        shuffle=False,
         num_workers=workers,
     )
 
@@ -248,16 +263,21 @@ def _ensemble_prediction_with_sampling(
     metrics_raw_df = {s: [] for s in headers_str + metrics_str}
     indiv_metrics_raw_df = (
         [{s: [] for s in headers_str + metrics_str} for _ in range(n_models)]
-        if save_indiv else None
+        if save_indiv
+        else None
     )
     qc_raw_df = {s: [] for s in headers_str + qc_str} if save_qc else None
 
     for test_step in range(num_test):
         self._ensemble_prediction_step_with_sampling(
-            test_loader=test_loader, test_step=test_step,
-            metrics_raw_df=metrics_raw_df, indiv_metrics_raw_df=indiv_metrics_raw_df,
-            qc_raw_df=qc_raw_df, rotation_avg=rotation_avg,
-            rotate_range=rotate_range, translate_range=translate_range,
+            test_loader=test_loader,
+            test_step=test_step,
+            metrics_raw_df=metrics_raw_df,
+            indiv_metrics_raw_df=indiv_metrics_raw_df,
+            qc_raw_df=qc_raw_df,
+            rotation_avg=rotation_avg,
+            rotate_range=rotate_range,
+            translate_range=translate_range,
         )
 
     self.save_metrics_csv(metrics_raw_df, metrics_str, self.metrics_dir)
@@ -268,23 +288,25 @@ def _ensemble_prediction_with_sampling(
 
     if save_qc:
         self.save_metrics_csv(
-            qc_raw_df, qc_str, self.qc_dir,
+            qc_raw_df,
+            qc_str,
+            self.qc_dir,
             raw_name="quality_control_raw.csv",
             summary_name="quality_control.csv",
         )
 
 
 def run(
-        self,
-        input_dir,
-        output_dir,
-        models_dir, 
-        save_qc=False,
-        save_indiv=False,
-        workers=8, 
-        verbose=False,
-        log=False,
-    ):
+    self,
+    input_dir,
+    output_dir,
+    models_dir,
+    save_qc=False,
+    save_indiv=False,
+    workers=8,
+    verbose=False,
+    log=False,
+):
     """Run simulated-pose ensemble evaluation over every subject in input_dir."""
     input_dir = os.path.abspath(input_dir)
     output_dir = os.path.abspath(output_dir)
@@ -297,10 +319,10 @@ def run(
     self.print_model_info()
 
     datalist = init_datalist(input_dir=input_dir, img=self.data_cfg["img"])
-    
+
     report_path = os.path.join(output_dir, "sparc_reorientation_test.json")
     self.save_model_info(datalist=datalist, output_path=report_path)
-    
+
     subjects = sorted(datalist.keys())
     test_set = [datalist[s][j] for s in subjects for j in range(len(datalist[s]))]
 
@@ -311,7 +333,7 @@ def run(
         pixdim=self.transforms_cfg["pixdim"],
     )
     test_ds = CacheDataset(
-        data=test_set, 
+        data=test_set,
         transform=test_transforms,
         num_workers=workers,
         progress=verbose,
@@ -321,26 +343,26 @@ def run(
 
     logging.info("Ensemble prediction.")
     self._ensemble_prediction_with_sampling(
-        test_ds=test_ds, 
-        workers=workers, 
-        save_qc=save_qc, 
-        save_indiv=save_indiv, 
+        test_ds=test_ds,
+        workers=workers,
+        save_qc=save_qc,
+        save_indiv=save_indiv,
         **self.test_cfg,
     )
-    
-    
+
+
 def run_from_file(
-        self,
-        input_path,
-        output_path,
-        models_dir,
-        qc_report_path=None,
-        indiv_pred_dir=None,
-        rotation_avg="chordal",
-        workers=8,
-        verbose=False,
-        log=False,
-    ):
+    self,
+    input_path,
+    output_path,
+    models_dir,
+    qc_report_path=None,
+    indiv_pred_dir=None,
+    rotation_avg="chordal",
+    workers=8,
+    verbose=False,
+    log=False,
+):
     """Run ensemble inference on a single input file"""
     input_path = os.path.abspath(input_path)
     output_path = os.path.abspath(output_path)
@@ -351,7 +373,7 @@ def run_from_file(
 
     log_path = os.path.join(output_dir, "sparc_reorientation_test.log") if log else None
     self.setup_logging(log_path=log_path, verbose=verbose)
-    
+
     logging.info(f"Device: {self.device}")
 
     test_set = [{"image": input_path}]
@@ -363,7 +385,7 @@ def run_from_file(
         pixdim=self.transforms_cfg["pixdim"],
     )
     test_ds = CacheDataset(
-        data=test_set, 
+        data=test_set,
         transform=test_transforms,
         num_workers=workers,
         progress=verbose,

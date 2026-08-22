@@ -6,7 +6,7 @@ import numpy as np
 def matrix_log_so3(R):
     """Matrix logarithm of a rotation matrix R: its skew-symmetric
     tangent-space representation at the identity."""
-   
+
     # Clamp trace to [-1, 3] to guard against numerical drift outside [-1, 1]
     cos_theta = np.clip((np.trace(R) - 1.0) / 2.0, -1.0, 1.0)
     theta = np.arccos(cos_theta)  # rotation angle in [0, π]
@@ -34,36 +34,40 @@ def matrix_exp_so3(omega):
     """Matrix exponential of a skew-symmetric matrix, mapping a
     tangent vector back onto SO(3)."""
 
-    theta = np.sqrt(0.5 * np.sum(omega ** 2))  # ‖ω‖_F / √2 = ‖axis‖ * θ
+    theta = np.sqrt(0.5 * np.sum(omega**2))  # ‖ω‖_F / √2 = ‖axis‖ * θ
 
     if theta < 1e-10:
         return np.eye(3) + omega  # first-order approximation
 
-    return (np.eye(3)
-            + (np.sin(theta) / theta) * omega
-            + ((1.0 - np.cos(theta)) / theta ** 2) * omega @ omega)
+    return (
+        np.eye(3)
+        + (np.sin(theta) / theta) * omega
+        + ((1.0 - np.cos(theta)) / theta**2) * omega @ omega
+    )
 
 
 def skew(v):
     """Build the skew-symmetric (cross-product) matrix for vector v."""
-    
-    return np.array([
-        [ 0.0,  -v[2],  v[1]],
-        [ v[2],  0.0,  -v[0]],
-        [-v[1],  v[0],  0.0],
-    ])
+
+    return np.array(
+        [
+            [0.0, -v[2], v[1]],
+            [v[2], 0.0, -v[0]],
+            [-v[1], v[0], 0.0],
+        ]
+    )
 
 
 def geodesic_distance(R1, R2):
     """Geodesic (Riemannian) distance between two rotation matrices, in radians."""
-   
+
     return np.linalg.norm(matrix_log_so3(R1.T @ R2), "fro") / np.sqrt(2)
 
 
 def project_to_so3(M):
     """Project an arbitrary 3x3 matrix onto the closest rotation
     matrix in SO(3), via SVD."""
-    
+
     U, _, Vt = np.linalg.svd(M)
     D = np.diag([1.0, 1.0, np.linalg.det(U @ Vt)])
     return U @ D @ Vt
@@ -72,18 +76,18 @@ def project_to_so3(M):
 def chordal_mean(rotations):
     """Chordal (Frobenius) mean of a list of rotation matrices,
     projected back onto SO(3)."""
-    
+
     return project_to_so3(sum(rotations) / len(rotations))
 
 
 def geodesic_mean_so3(
-        rotations,
-        max_iter=100,
-        tol=1e-10,
-    ):
+    rotations,
+    max_iter=100,
+    tol=1e-10,
+):
     """Iteratively compute the Riemannian (geodesic/Karcher) mean of
     a list of rotation matrices, initialised from the chordal mean."""
-    
+
     # Initialise
     R = chordal_mean(rotations)
     n = len(rotations)
@@ -98,7 +102,7 @@ def geodesic_mean_so3(
             epsilon_bar += matrix_log_so3(R.T @ Ri)
         epsilon_bar /= n
 
-        grad_norm = np.linalg.norm(epsilon_bar, 'fro')
+        grad_norm = np.linalg.norm(epsilon_bar, "fro")
         mean_dist = np.mean([geodesic_distance(R, Ri) for Ri in rotations])
 
         grad_norms.append(grad_norm)
@@ -119,5 +123,5 @@ def geodesic_mean_so3(
         f"geodesic_mean_so3 did not converge after {max_iter} "
         f"iterations (final grad_norm={grad_norm:.2e}, tol={tol:.2e})."
     )
-    
+
     return R

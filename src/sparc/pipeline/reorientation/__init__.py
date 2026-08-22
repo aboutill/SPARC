@@ -6,8 +6,8 @@ import numpy as np
 
 from sparc.reorientation.tester import EnsembleTester
 from sparc.pipeline.reorientation.models import (
-    DEFAULT_MODELS_DIR, 
-    DEFAULT_MODEL_CFG_PATH, 
+    DEFAULT_MODELS_DIR,
+    DEFAULT_MODEL_CFG_PATH,
 )
 
 
@@ -15,7 +15,7 @@ class Reorientor:
     """Automated reorientation stage."""
 
     from ._io import (
-        print_model_info, 
+        print_model_info,
         print_qc,
     )
     from ._run import (
@@ -29,36 +29,35 @@ class Reorientor:
         run_with_gui,
     )
     from ._gui import gui
-    
+
     def __init__(
-            self,
-            models=None,
-            rotation_avg="chordal",
-            reo_stacks=False,
-            gd_qc_thresh=25.0,
-            cd_qc_thresh=5.0,
-            models_dir=None,
-            models_cfg_path=None,
-        ):
+        self,
+        models=None,
+        rotation_avg="chordal",
+        reo_stacks=False,
+        gd_qc_thresh=25.0,
+        cd_qc_thresh=5.0,
+        models_dir=None,
+        models_cfg_path=None,
+    ):
         """Store configuration and initialise ensemble tester."""
-        
+
         self.models = models
         self.rotation_avg = rotation_avg
         self.reo_stacks = reo_stacks
-        self.gd_qc_thresh = gd_qc_thresh * np.pi / 180  #  to radians 
+        self.gd_qc_thresh = gd_qc_thresh * np.pi / 180  #  to radians
         self.cd_qc_thresh = cd_qc_thresh
-        
+
         self.init_ensemble_tester(
             models_dir=models_dir,
             models_cfg_path=models_cfg_path,
         )
 
-        
     def init_ensemble_tester(
-            self,
-            models_dir=None,
-            models_cfg_path=None,
-        ):
+        self,
+        models_dir=None,
+        models_cfg_path=None,
+    ):
         """Load model configuration and build the ensemble tester.
 
         Either provide both models_dir and models_cfg_path (a
@@ -87,30 +86,29 @@ class Reorientor:
 
         if not os.path.isfile(models_cfg_path):
             raise ValueError(f"Configuration file not found: {models_cfg_path}")
-        
+
         cfg = yaml.safe_load(open(models_cfg_path))
         self.vit_cfg = cfg["vit"]
-        self.transforms_cfg = cfg["transforms"] 
+        self.transforms_cfg = cfg["transforms"]
         self.models_dir = models_dir
-        
+
         self.ensemble_tester = EnsembleTester(
             transforms_cfg=self.transforms_cfg,
             vit_cfg=self.vit_cfg,
         )
-        
-        
+
     def validate_reo(
-            self, 
-            qc_report_path,
-        ):
+        self,
+        qc_report_path,
+    ):
         """Return True if a reorientation QC report meets both the
         geodesic-distance and centre-distance acceptance thresholds."""
-        
+
         with open(qc_report_path) as f:
             report = json.load(f)
-            
-        gd_qc = float(report['GD_QC']['mean'])
-        cd_qc = float(report['CD_QC']['mean'])
-        
+
+        gd_qc = float(report["GD_QC"]["mean"])
+        cd_qc = float(report["CD_QC"]["mean"])
+
         valid = gd_qc < self.gd_qc_thresh and cd_qc < self.cd_qc_thresh
         return valid

@@ -31,6 +31,7 @@ def quality_control(self, affine_matrices):
 
 def save_quality_control_report(self, affine_matrices, output_path):
     """Save a single-subject inter-model agreement report as JSON."""
+
     def _fmt(vals):
         vals = list(vals)
         return {

@@ -6,11 +6,11 @@ from sparc.tools.itksnap import itksnap_subprocess
 
 @staticmethod
 def stack_review_gui(
-        stack_mag_nii_paths,
-        stack_pha_nii_paths,
-        stack_infos,
-        gui_mode,
-    ):
+    stack_mag_nii_paths,
+    stack_pha_nii_paths,
+    stack_infos,
+    gui_mode,
+):
     """Interactive review of preprocessed input stacks: optionally
     exclude motion-corrupted stacks, and record each remaining
     stack's diastole frame index, then circularly shift that stack's
@@ -20,17 +20,14 @@ def stack_review_gui(
     user_input = None
     choices = ["y", "n", "q"]
     while user_input not in choices:
-        user_input = input(
-            f"Perform manual review of input stacks? [{'/'.join(choices)}]"
-        )
+        user_input = input(f"Perform manual review of input stacks? [{'/'.join(choices)}]")
         user_input = user_input.lower().strip()
 
     if user_input == "q":
         return None, None, None, None, None, None
 
     if user_input == "n":
-        return (stack_mag_nii_paths, stack_pha_nii_paths, stack_infos,
-                None, None, None)
+        return (stack_mag_nii_paths, stack_pha_nii_paths, stack_infos, None, None, None)
 
     n = len(stack_mag_nii_paths)
     excluded_index = []
@@ -68,9 +65,7 @@ def stack_review_gui(
             t_start = None
             loop = True
             while loop:
-                user_input = input(
-                    "Diastole frame index (0-based)? [0,1,2,.../n/q]"
-                )
+                user_input = input("Diastole frame index (0-based)? [0,1,2,.../n/q]")
                 user_input = user_input.lower().strip()
 
                 if user_input == "n":
@@ -91,9 +86,9 @@ def stack_review_gui(
                     print(f"Index must be between 0 and {t_dim - 1}.")
                     continue
 
-                confirm = input(
-                    f"Confirm diastole frame index {candidate}? [y/n/q]"
-                ).lower().strip()
+                confirm = (
+                    input(f"Confirm diastole frame index {candidate}? [y/n/q]").lower().strip()
+                )
                 if confirm == "y":
                     t_start = candidate
                     loop = False
@@ -117,14 +112,17 @@ def stack_review_gui(
         stack_info["raw_diastole_idx"] = t_start
 
     for mag_nii_path, pha_nii_path, t_start in zip(
-            stack_mag_nii_paths, stack_pha_nii_paths, t_starts):
+        stack_mag_nii_paths, stack_pha_nii_paths, t_starts
+    ):
         roll_nii(mag_nii_path, t_start)
         if pha_nii_path is not None:
             roll_nii(pha_nii_path, t_start)
 
-    return (stack_mag_nii_paths, 
-            stack_pha_nii_paths, 
-            stack_infos,
-            excluded_stack_mag_nii_paths, 
-            excluded_stack_pha_nii_paths,
-            excluded_stack_infos)
+    return (
+        stack_mag_nii_paths,
+        stack_pha_nii_paths,
+        stack_infos,
+        excluded_stack_mag_nii_paths,
+        excluded_stack_pha_nii_paths,
+        excluded_stack_infos,
+    )

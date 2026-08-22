@@ -10,11 +10,11 @@ from sparc.utils.logging import setup_logging_config
 def setup_logging(log_path=None, verbose=False):
     """Setup logging."""
     setup_logging_config(
-        log_path=log_path, 
+        log_path=log_path,
         verbose=verbose,
     )
-    
-    
+
+
 def print_model_info(self):
     """Print model settings."""
     logging.info("Segmentation model training configurations.")
@@ -31,8 +31,8 @@ def print_model_info(self):
             logging.info(f"  {title}:")
             for k, v in cfg.items():
                 logging.info(f"    {k}: {v}")
-    
-    
+
+
 def save_model_info(self, datalists, output_path):
     """Save inputs and model parameters to a JSON file."""
     cfgs = {
@@ -48,19 +48,19 @@ def save_model_info(self, datalists, output_path):
         if v is not None:
             report[k] = v
     report["datalists"] = datalists
-    
+
     output_path = os.path.abspath(output_path)
     output_dir = os.path.dirname(output_path)
     os.makedirs(output_dir, exist_ok=True)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(report, f, indent=4)
-    
 
-@staticmethod    
+
+@staticmethod
 def get_models_paths(models_dir, folds):
     """Load every *.pth checkpoint in models_dir."""
-        
+
     models_paths = None
     if models_dir is not None:
         reg_ex = os.path.join(models_dir, "*.pth")

@@ -7,26 +7,26 @@ import subprocess
 
 
 def svr_reconstruct(
-        cine_nii_path,
-        stack_nii_paths,
-        slice_thickness,
-        target_stack_idx,
-        target_mask_path,
-        iterations,
-        sr_iterations,
-        resolution,
-        time_resolution,
-        lambda_smooth,
-        delta_edge,
-        no_stack_zcrop=False,
-        mask_slices_not_svr=False,
-        no_robust_statistics=False,
-        no_intensity_matching=False,
-        profile=False,
-        verbose=False,
-        debug=False,
-        log=False,
-    ):
+    cine_nii_path,
+    stack_nii_paths,
+    slice_thickness,
+    target_stack_idx,
+    target_mask_path,
+    iterations,
+    sr_iterations,
+    resolution,
+    time_resolution,
+    lambda_smooth,
+    delta_edge,
+    no_stack_zcrop=False,
+    mask_slices_not_svr=False,
+    no_robust_statistics=False,
+    no_intensity_matching=False,
+    profile=False,
+    verbose=False,
+    debug=False,
+    log=False,
+):
     """Run gated slice-to-volume reconstruction via the SVR-lite
     binary, producing a 3D+time cine volume.
     """
@@ -39,20 +39,29 @@ def svr_reconstruct(
     os.makedirs(output_dir, exist_ok=True)
 
     cmd = [
-        "svr", "reconstruct",
+        "svr",
+        "reconstruct",
         cine_nii_path,
     ]
     cmd += stack_nii_paths
     cmd += ["-thickness"] + [str(s) for s in slice_thickness]
     cmd += [
-        "-target_stack", str(target_stack_idx),
-        "-mask", target_mask_path,
-        "-iterations", str(iterations),
-        "-sr_iterations", str(sr_iterations),
-        "-resolution", str(resolution),
-        "-time_resolution", str(time_resolution),
-        "-lambda", str(lambda_smooth),
-        "-delta", str(delta_edge),
+        "-target_stack",
+        str(target_stack_idx),
+        "-mask",
+        target_mask_path,
+        "-iterations",
+        str(iterations),
+        "-sr_iterations",
+        str(sr_iterations),
+        "-resolution",
+        str(resolution),
+        "-time_resolution",
+        str(time_resolution),
+        "-lambda",
+        str(lambda_smooth),
+        "-delta",
+        str(delta_edge),
     ]
     if no_stack_zcrop:
         cmd += ["-no_stack_zcrop"]
@@ -75,7 +84,9 @@ def svr_reconstruct(
         try:
             subprocess.run(cmd, check=True)
         except FileNotFoundError as e:
-            raise RuntimeError(f"SVR lite svr reconstruct failed: executable not found ({e})") from e
+            raise RuntimeError(
+                f"SVR lite svr reconstruct failed: executable not found ({e})"
+            ) from e
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"SVR lite svr reconstruct failed: {e}") from e
 
@@ -92,7 +103,7 @@ def svr_reconstruct(
             cmd_log_path = "svr-lite-cmd.txt"
             with open(cmd_log_path, "w") as f:
                 f.write(shlex.join(cmd))
-        
+
         log_file = "main.log"
         if os.path.exists(log_file):
             if log:
@@ -110,8 +121,7 @@ def svr_reconstruct(
 
         if not os.path.exists(report_path):
             raise FileNotFoundError(
-                f"SVR lite did not produce the expected metadata "
-                f"report: {report_path}"
+                f"SVR lite did not produce the expected metadata " f"report: {report_path}"
             )
 
         return report_path

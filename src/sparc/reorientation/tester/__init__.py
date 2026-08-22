@@ -10,7 +10,7 @@ class EnsembleTester:
     """Loads N independently trained reorientation networks and runs
     ensemble inference, with optional per-model inter-agreement QC and
     validation metrics."""
-    
+
     from ._io import (
         setup_logging,
         print_model_info,
@@ -34,21 +34,20 @@ class EnsembleTester:
     )
 
     def __init__(
-            self, 
-            transforms_cfg,
-            vit_cfg, 
-            data_cfg=None,
-            test_cfg=None,
-        ):
+        self,
+        transforms_cfg,
+        vit_cfg,
+        data_cfg=None,
+        test_cfg=None,
+    ):
         """Store config and select device."""
         self.data_cfg = data_cfg
         self.transforms_cfg = transforms_cfg
         self.vit_cfg = vit_cfg
         self.test_cfg = test_cfg
-        
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
-    
+
     @staticmethod
     def average_rotations(rotations, method="chordal"):
         """Average a batch of (N,3,3) rotation matrices via the
@@ -65,14 +64,11 @@ class EnsembleTester:
         elif method == "chordal":
             return R_obj.mean().as_matrix()
         elif method == "geodesic":
-            return geodesic_mean_so3(
-                [R_obj[i].as_matrix() for i in range(len(R_obj))]
-            )
+            return geodesic_mean_so3([R_obj[i].as_matrix() for i in range(len(R_obj))])
         else:
             raise ValueError(f"Unknown rotation_avg '{method}'.")
-            
-    
-    def _predict_ensemble(self, img, rotation_avg="chordal", t_max=1/3):
+
+    def _predict_ensemble(self, img, rotation_avg="chordal", t_max=1 / 3):
         """Run every ensemble member's forward pass once on `img` and
         aggregate per sample. Returns (avg_affine_matrix, per_model_affine):
         avg_affine_matrix is (batch, 4, 4); per_model_affine is
@@ -89,10 +85,10 @@ class EnsembleTester:
         affine_matrix_preds = torch.stack(affine_matrix_preds, dim=0)  # (n_models, batch, 4, 4)
 
         roi_size = self.transforms_cfg["roi_size"]
-        t_min = [-t_max*s for s in roi_size]
-        t_max_bound = [t_max*s for s in roi_size]
+        t_min = [-t_max * s for s in roi_size]
+        t_max_bound = [t_max * s for s in roi_size]
 
-        t_preds = affine_matrix_preds[:, :, :3, 3]                 # (n_models, batch, 3)
+        t_preds = affine_matrix_preds[:, :, :3, 3]  # (n_models, batch, 3)
         R_preds = affine_matrix_preds[:, :, :3, :3].cpu().numpy()  # (n_models, batch, 3, 3)
 
         avg_affine_matrices = np.tile(np.eye(4), (batch_size, 1, 1))  # (batch, 4, 4)
@@ -103,9 +99,8 @@ class EnsembleTester:
             avg_affine_matrices[b, :3, :3] = avg_R
             avg_affine_matrices[b, :3, 3] = avg_t
 
-        avg_affine_matrix = (
-            torch.from_numpy(avg_affine_matrices)
-            .to(dtype=torch.float32, device=self.device)
+        avg_affine_matrix = torch.from_numpy(avg_affine_matrices).to(
+            dtype=torch.float32, device=self.device
         )
 
         return avg_affine_matrix, affine_matrix_preds

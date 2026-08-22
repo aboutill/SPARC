@@ -1,10 +1,10 @@
 from monai.utils import set_determinism
 from monai.transforms import (
     EnsureChannelFirstd,
-    EnsureTyped, 
+    EnsureTyped,
     Orientationd,
     Compose,
-    LoadImaged,  
+    LoadImaged,
     NormalizeIntensityd,
     SpatialPadd,
     CenterSpatialCropd,
@@ -17,22 +17,22 @@ from monai.transforms import (
 
 
 def init_train_transforms(
-        pixdim=(1,1,1),
-        roi_size=(96,96,96),
-        prob_contrast=0.2, 
-        gamma_range=(0.5,4.5), 
-        prob_bias_field=0.2, 
-        bias_field_range=(0,0.2), 
-        prob_zoom=0.2,
-        zoom_range=(0.9,1.1),
-        labels=False,
-    ):
+    pixdim=(1, 1, 1),
+    roi_size=(96, 96, 96),
+    prob_contrast=0.2,
+    gamma_range=(0.5, 4.5),
+    prob_bias_field=0.2,
+    bias_field_range=(0, 0.2),
+    prob_zoom=0.2,
+    zoom_range=(0.9, 1.1),
+    labels=False,
+):
     """Training augmentation pipeline: canonical RAS reorientation,
     bias field/contrast jitter, spatial padding/cropping, and random zoom."""
-   
+
     # Initialize seed
     set_determinism()
-    
+
     # Set keys, mode
     if labels:
         keys = ["image", "label"]
@@ -59,28 +59,28 @@ def init_train_transforms(
                 nonzero=True,
             ),
             RandAdjustContrastd(
-                keys="image", 
-                prob=prob_contrast, 
+                keys="image",
+                prob=prob_contrast,
                 gamma=gamma_range,
             ),
             RandBiasFieldd(
-                keys="image", 
+                keys="image",
                 prob=prob_bias_field,
-                coeff_range=bias_field_range, 
+                coeff_range=bias_field_range,
             ),
             Spacingd(
-                keys=keys, 
-                pixdim=pixdim, 
+                keys=keys,
+                pixdim=pixdim,
                 mode=mode,
             ),
             SpatialPadd(
-                keys=keys, 
+                keys=keys,
                 spatial_size=roi_size,
                 mode="constant",
             ),
             CenterSpatialCropd(
                 keys=keys,
-                roi_size=roi_size, 
+                roi_size=roi_size,
             ),
             RandZoomd(
                 keys=keys,
@@ -94,18 +94,18 @@ def init_train_transforms(
             ToTensord(keys=keys),
         ]
     )
-    
+
     return train_transforms
-    
-    
+
+
 def init_val_transforms(
-        pixdim=(1,1,1),
-        roi_size=(96,96,96),
-        labels=False,
-    ):
+    pixdim=(1, 1, 1),
+    roi_size=(96, 96, 96),
+    labels=False,
+):
     """Validation transform pipeline (no augmentation), matching the
     training spacing/ROI size."""
-   
+
     # Set keys, mode
     if labels:
         keys = ["image", "label"]
@@ -113,10 +113,10 @@ def init_val_transforms(
     else:
         keys = "image"
         mode = "bilinear"
-    
+
     # Initialize seed
     set_determinism()
-    
+
     # Initialize validation transforms
     val_transforms = Compose(
         [
@@ -136,37 +136,37 @@ def init_val_transforms(
                 nonzero=True,
             ),
             Spacingd(
-                keys=keys, 
-                pixdim=pixdim, 
+                keys=keys,
+                pixdim=pixdim,
                 mode=mode,
             ),
             SpatialPadd(
-                keys=keys, 
+                keys=keys,
                 spatial_size=roi_size,
                 mode="constant",
             ),
             CenterSpatialCropd(
                 keys=keys,
-                roi_size=roi_size, 
+                roi_size=roi_size,
             ),
             ToTensord(
                 keys=keys,
             ),
         ]
     )
-    
+
     return val_transforms
 
 
 def init_test_transforms(
-        pixdim=(1,1,1),
-        roi_size=(96,96,96),
-    ):
+    pixdim=(1, 1, 1),
+    roi_size=(96, 96, 96),
+):
     """Inference-only transform pipeline for unlabelled data."""
-    
+
     # Initialize seed
     set_determinism()
-    
+
     # Initialize test transforms
     test_transforms = Compose(
         [
@@ -183,23 +183,23 @@ def init_test_transforms(
                 nonzero=True,
             ),
             Spacingd(
-                keys="image", 
-                pixdim=pixdim, 
+                keys="image",
+                pixdim=pixdim,
                 mode="bilinear",
             ),
             SpatialPadd(
-                keys="image", 
+                keys="image",
                 spatial_size=roi_size,
                 mode="constant",
             ),
             CenterSpatialCropd(
                 keys="image",
-                roi_size=roi_size, 
+                roi_size=roi_size,
             ),
             ToTensord(
                 keys="image",
             ),
         ]
     )
-    
+
     return test_transforms

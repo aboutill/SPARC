@@ -6,7 +6,7 @@ from monai.data import FolderLayout
 def init_output_dir_layout(self, output_dir, fold=None, data_root_dir=None):
     """Set up model/log/metrics/prediction output paths for one
     CV fold (or a single non-CV run)."""
-            
+
     # Set output folders
     if fold is not None:
         self.models_dir = os.path.join(output_dir, "models")
@@ -20,7 +20,7 @@ def init_output_dir_layout(self, output_dir, fold=None, data_root_dir=None):
         self.metrics_dir = os.path.join(output_dir, "metrics")
         self.model_path = os.path.join(output_dir, self.checkpoint_filename)
     self.prediction_dir = os.path.join(output_dir, "prediction")
-    
+
     # Prediction folder layout
     self.prediction_layout = FolderLayout(
         output_dir=self.prediction_dir,

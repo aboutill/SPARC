@@ -14,10 +14,10 @@ from monai.metrics import (
 
 
 def quality_control(
-        self, 
-        ensemble_mask_path, 
-        indiv_mask_paths,
-    ):
+    self,
+    ensemble_mask_path,
+    indiv_mask_paths,
+):
     """Compute pairwise inter-model DSC/HD95/ASSD and mask volume,
     independently per class.
     """
@@ -74,10 +74,10 @@ def quality_control(
 
 
 def _save_quality_control_dataframe(
-        self,
-        ensemble_mask_paths,
-        indiv_mask_paths,
-    ):
+    self,
+    ensemble_mask_paths,
+    indiv_mask_paths,
+):
     """Save per-subject-per-class and summary-per-class inter-model
     agreement metrics to CSV, under self.qc_dir.
 
@@ -85,6 +85,7 @@ def _save_quality_control_dataframe(
     quality_control.csv has one row per class, averaged across
     subjects.
     """
+
     def _fmt(val):
         return f"{val:.4f}"
 
@@ -103,14 +104,16 @@ def _save_quality_control_dataframe(
             assd_qc = np.mean(result["assds"])
             volume = result["volume"]
 
-            per_subject_rows.append({
-                "filename": ensemble_path,
-                "class": class_id,
-                "DICE_QC": _fmt(dice_qc),
-                "HD_QC": _fmt(hd_qc),
-                "ASSD_QC": _fmt(assd_qc),
-                "VOL_QC": _fmt(volume),
-            })
+            per_subject_rows.append(
+                {
+                    "filename": ensemble_path,
+                    "class": class_id,
+                    "DICE_QC": _fmt(dice_qc),
+                    "HD_QC": _fmt(hd_qc),
+                    "ASSD_QC": _fmt(assd_qc),
+                    "VOL_QC": _fmt(volume),
+                }
+            )
 
             bucket = raw_by_class.setdefault(
                 class_id, {"DICE_QC": [], "HD_QC": [], "ASSD_QC": [], "VOL_QC": []}
@@ -129,20 +132,19 @@ def _save_quality_control_dataframe(
     pd.DataFrame(per_subject_rows).to_csv(
         os.path.join(self.qc_dir, "quality_control_raw.csv"), index=False
     )
-    pd.DataFrame(summary_rows).to_csv(
-        os.path.join(self.qc_dir, "quality_control.csv"), index=False
-    )
+    pd.DataFrame(summary_rows).to_csv(os.path.join(self.qc_dir, "quality_control.csv"), index=False)
 
 
 def save_quality_control_report(
-        self,
-        ensemble_mask_path,
-        indiv_mask_paths,
-        output_path,
-    ):
+    self,
+    ensemble_mask_path,
+    indiv_mask_paths,
+    output_path,
+):
     """Save a single-subject inter-model agreement report as JSON,
-    keyed by class label. 
+    keyed by class label.
     """
+
     def _fmt(vals):
         vals = list(vals)
         return {
@@ -155,7 +157,7 @@ def save_quality_control_report(
         ensemble_mask_path=ensemble_mask_path,
         indiv_mask_paths=indiv_mask_paths,
     )
-    
+
     if self.out_channels == 1:
         result = per_class_results[1]
         report = {

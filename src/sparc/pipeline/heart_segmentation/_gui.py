@@ -8,19 +8,19 @@ from sparc.tools.itksnap import itksnap_subprocess
 
 @staticmethod
 def gui(
-        cine_nii_path,
-        output_dir,
-        mode,
-        gui_mode,
-        heart_mask_path=None,
-    ):
+    cine_nii_path,
+    output_dir,
+    mode,
+    gui_mode,
+    heart_mask_path=None,
+):
     """Interactive heart-mask review/refinement: launch ITK-SNAP
     ask the user to validate.
     """
-    
+
     tgt_mask = None
     copy_time = None
- 
+
     filename = os.path.basename(cine_nii_path).split(".nii.gz")[0]
     if mode == "manual":
         manual_mask_path = os.path.join(output_dir, f"{filename}_heart_mask_manual.nii.gz")
@@ -28,17 +28,17 @@ def gui(
         manual_mask_path = heart_mask_path.replace("heart_mask_auto", "heart_mask_semi_auto")
         shutil.copy2(heart_mask_path, manual_mask_path)
         copy_time = datetime.datetime.now()
-        
+
     parent, filename = os.path.split(manual_mask_path)
     mask_display_path = os.path.join(os.path.basename(parent), filename)
-    
+
     parent, filename = os.path.split(cine_nii_path)
     cine_display_path = os.path.join(os.path.basename(parent), filename)
-        
+
     if gui_mode == "docker":
         itksnap_mask_path = manual_mask_path if mode != "manual" else None
         p = itksnap_subprocess(
-            img_path=cine_nii_path, 
+            img_path=cine_nii_path,
             mask_path=itksnap_mask_path,
         )
     else:
@@ -46,7 +46,7 @@ def gui(
         if mode != "manual":
             msg += f" with segmentation {mask_display_path}"
         print(msg)
-    
+
     choices = ["y", "q"]
     msg = (
         f"Please save segmentation as: {mask_display_path}\n"
@@ -58,7 +58,7 @@ def gui(
             user_input = input(msg)
             user_input = user_input.lower().strip()
             mask_exist = os.path.exists(manual_mask_path)
- 
+
             if user_input == "y" and mask_exist:
                 loop = False
             elif user_input == "q":
@@ -68,10 +68,10 @@ def gui(
         while user_input not in choices:
             user_input = input(msg)
             user_input = user_input.lower().strip()
- 
+
     if gui_mode == "docker":
         p.kill()
-        
+
     user_val = user_input == "y"
     if user_val:
         if mode != "manual":
@@ -79,9 +79,9 @@ def gui(
             tgt_mask = manual_mask_path if user_ref else heart_mask_path
         else:
             tgt_mask = manual_mask_path
- 
+
     else:
         if mode != "manual":
             check_file(manual_mask_path, copy_time)
- 
+
     return tgt_mask

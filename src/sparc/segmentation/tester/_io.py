@@ -16,13 +16,13 @@ from sparc.segmentation.model import Model
 @staticmethod
 def setup_logging(log_path=None, verbose=False):
     """Setup logging."""
-    
+
     setup_logging_config(
-        log_path=log_path, 
+        log_path=log_path,
         verbose=verbose,
     )
-    
-    
+
+
 def print_model_info(self):
     """Print model settings."""
     logging.info("Segmentation model testing configurations.")
@@ -38,8 +38,8 @@ def print_model_info(self):
             logging.info(f"  {title}:")
             for k, v in cfg.items():
                 logging.info(f"    {k}: {v}")
-                
-    
+
+
 def save_model_info(self, datalist, output_path):
     """Save inputs and model parameters to a JSON file."""
     cfgs = {
@@ -54,25 +54,25 @@ def save_model_info(self, datalist, output_path):
         if v is not None:
             report[k] = v
     report["datalist"] = datalist
-    
+
     output_path = os.path.abspath(output_path)
     output_dir = os.path.dirname(output_path)
     os.makedirs(output_dir, exist_ok=True)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(report, f, indent=4)
-    
+
 
 def init_output_dir_layout(self, output_dir, data_root_dir=None):
     """Set up ensemble output folders: metrics/, quality_control/,
     prediction/.
     """
-    
+
     # Set output folders
     self.metrics_dir = os.path.join(output_dir, "metrics")
     self.qc_dir = os.path.join(output_dir, "quality_control")
     self.prediction_dir = os.path.join(output_dir, "prediction")
-    
+
     # Prediction folder layout
     self.prediction_layout = FolderLayout(
         output_dir=self.prediction_dir,
@@ -81,8 +81,8 @@ def init_output_dir_layout(self, output_dir, data_root_dir=None):
         makedirs=True,
         data_root_dir=data_root_dir,
     )
-    
-    
+
+
 def load_ensemble(self, models_dir):
     """Load every *.pth checkpoint into self.models."""
     model_paths = sorted(glob.glob(os.path.join(models_dir, "*.pth")))
@@ -96,8 +96,8 @@ def load_ensemble(self, models_dir):
         model.to_device(device=self.device)
         model.net.load_state_dict(torch.load(model_path))
         self.models.append(model)
-        
-        
+
+
 @staticmethod
 def load_mask_as_tensor(mask_path):
     """Load a mask as a single-channel integer class label volume."""

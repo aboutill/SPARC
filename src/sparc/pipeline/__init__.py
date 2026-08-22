@@ -8,30 +8,30 @@ from sparc.pipeline.postprocessing import PostProcessor
 
 class Pipeline:
     """Build together every SPARC pipeline stage."""
-    
+
     from ._io import (
-        setup_logging, 
+        setup_logging,
         print_pipeline_info,
         save_pipeline_info,
         save_qc_report,
     )
     from ._run import run
-    
+
     def __init__(
-            self,
-            preprocessing_cfg,
-            chest_segmentation_cfg,
-            svr_cfg,
-            heart_segmentation_cfg,
-            reorientation_cfg,
-            postprocessing_cfg,
-            models_chest_seg_dir=None,
-            models_chest_seg_cfg_path=None,
-            models_heart_seg_dir=None,
-            models_heart_seg_cfg_path=None,
-            models_reo_dir=None,
-            models_reo_cfg_path=None,
-        ):
+        self,
+        preprocessing_cfg,
+        chest_segmentation_cfg,
+        svr_cfg,
+        heart_segmentation_cfg,
+        reorientation_cfg,
+        postprocessing_cfg,
+        models_chest_seg_dir=None,
+        models_chest_seg_cfg_path=None,
+        models_heart_seg_dir=None,
+        models_heart_seg_cfg_path=None,
+        models_reo_dir=None,
+        models_reo_cfg_path=None,
+    ):
         """Build every stage object from its config section."""
 
         self.preprocessing_cfg = preprocessing_cfg
@@ -40,7 +40,7 @@ class Pipeline:
         self.heart_segmentation_cfg = heart_segmentation_cfg
         self.reorientation_cfg = reorientation_cfg
         self.postprocessing_cfg = postprocessing_cfg
-        
+
         self.pre_processor = PreProcessor(**self.preprocessing_cfg)
         self.chest_segmentator = ChestSegmentator(
             models_dir=models_chest_seg_dir,

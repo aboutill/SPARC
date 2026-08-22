@@ -8,29 +8,29 @@ from monai.data import DataLoader
 
 
 def validate(
-        self,
-        val_ds, 
-        num_val=5,
-        rotate_range=None,
-        translate_range=None,
-        workers=8,
-    ):
+    self,
+    val_ds,
+    num_val=5,
+    rotate_range=None,
+    translate_range=None,
+    workers=8,
+):
     """Load the best checkpoint and run repeated random-pose
     validation passes, saving raw and summary metrics.
     """
-    
+
     # Load weights
     if os.path.exists(self.model_path):
         self.net.load_state_dict(torch.load(self.model_path))
-    
+
     # Initialize data loader
     val_loader = DataLoader(
-        dataset=val_ds, 
+        dataset=val_ds,
         batch_size=len(val_ds),
-        shuffle=False, 
+        shuffle=False,
         num_workers=workers,
     )
-    
+
     # Define metrics
     metrics_str = [
         "geodesic-distance",
@@ -38,7 +38,7 @@ def validate(
         "normalised-mutual-information",
         "peak-signal-to-noise-ratio",
     ]
-    
+
     # Raw metrics dataframe
     metrics_raw_df = {
         "filename": [],
@@ -57,51 +57,47 @@ def validate(
             metrics_raw_df=metrics_raw_df,
             prediction_dir=self.prediction_dir,
         )
-        
+
     # Save metrics
     os.makedirs(self.metrics_dir, exist_ok=True)
     metrics_raw_df = pd.DataFrame(metrics_raw_df)
-    metrics_raw_df.to_csv(
-        os.path.join(self.metrics_dir, "metrics_raw.csv"), index=False
-    ) 
-    
+    metrics_raw_df.to_csv(os.path.join(self.metrics_dir, "metrics_raw.csv"), index=False)
+
     # Metrics dataframe
     metrics_df = {metric_str: [] for metric_str in metrics_str}
-    
+
     for metric_str in metrics_str:
         col = metrics_raw_df[metric_str]
         metrics_df[metric_str].append(np.mean(col))
-        
+
     metrics_df = pd.DataFrame(metrics_df)
-    metrics_df.to_csv(
-        os.path.join(self.metrics_dir, "metrics.csv"), index=False
-    )  
-    
-    
+    metrics_df.to_csv(os.path.join(self.metrics_dir, "metrics.csv"), index=False)
+
+
 def _validate_step(
-        self, 
-        val_loader, 
-        val_step,
-        metrics_raw_df,
-        prediction_dir, 
-        rotate_range=None,
-        translate_range=None,
-    ):
+    self,
+    val_loader,
+    val_step,
+    metrics_raw_df,
+    prediction_dir,
+    rotate_range=None,
+    translate_range=None,
+):
     """Run one validation pass over the full validation set and save
     predicted/deformed images, one output set per sample per batch."""
-    
+
     self.net.eval()
-    
+
     with torch.no_grad():
         for batch in val_loader:
-            
+
             img = batch["image"].to(self.device, non_blocking=True)
             if "label" in batch.keys():
                 mask = batch["label"].to(self.device, non_blocking=True)
             else:
                 mask = None
             file_paths = batch["image_meta_dict"]["filename_or_obj"]
-            
+
             per_sample_imgs = self._validate_batch(
                 img=img,
                 mask=mask,
@@ -111,7 +107,7 @@ def _validate_step(
                 val_step=val_step,
                 metrics_raw_df=metrics_raw_df,
             )
-            
+
             file_ext = ".nii.gz"
             for file_path, imgs in zip(file_paths, per_sample_imgs):
                 dirname = os.path.dirname(file_path)
@@ -123,18 +119,18 @@ def _validate_step(
                     out_path = os.path.join(folder, out_name)
                     if arr is not None:
                         self.save_img(arr, out_path)
-                
-            
+
+
 def _validate_batch(
-        self,
-        img,
-        mask,
-        file_paths,
-        val_step,
-        metrics_raw_df,
-        rotate_range=None,
-        translate_range=None,
-    ):
+    self,
+    img,
+    mask,
+    file_paths,
+    val_step,
+    metrics_raw_df,
+    rotate_range=None,
+    translate_range=None,
+):
     """Simulate an independent random pose per sample in the batch,
     predict its inverse, compute metrics, and return a list of
     per-sample image dicts (one per sample) for saving.
@@ -142,7 +138,7 @@ def _validate_batch(
     batch_size = img.shape[0]
 
     affine_matrix, (angle, t) = self.init_affine_matrix(
-        n=batch_size, 
+        n=batch_size,
         r_range=rotate_range,
         t_range=translate_range,
     )

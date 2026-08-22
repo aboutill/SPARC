@@ -19,8 +19,8 @@ def setup_logging(log_path=None, verbose=False):
         log_path=log_path,
         verbose=verbose,
     )
-    
-    
+
+
 def print_model_info(self):
     """Print model settings."""
     logging.info("Reorientation model testing configurations.")
@@ -35,8 +35,8 @@ def print_model_info(self):
             logging.info(f"  {title}:")
             for k, v in cfg.items():
                 logging.info(f"    {k}: {v}")
-    
-    
+
+
 def save_model_info(self, datalist, output_path):
     """Save inputs and model parameters to a JSON file."""
     cfgs = {
@@ -50,14 +50,14 @@ def save_model_info(self, datalist, output_path):
         if v is not None:
             report[k] = v
     report["datalist"] = datalist
-    
+
     output_path = os.path.abspath(output_path)
     output_dir = os.path.dirname(output_path)
     os.makedirs(output_dir, exist_ok=True)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(report, f, indent=4)
-        
+
 
 def init_output_dir_layout(self, output_dir, data_root_dir):
     """Set up ensemble output folders: prediction/, metrics/, quality_control/."""
@@ -85,8 +85,8 @@ def load_ensemble(self, models_dir):
         model.to_device(device=self.device)
         model.net.load_state_dict(torch.load(model_path))
         self.models.append(model)
-        
-        
+
+
 @staticmethod
 def save_arrs(arrs, folder, test_step, model):
     """Save a dict of prediction arrays: 3D arrays as NIfTI, other
@@ -101,16 +101,16 @@ def save_arrs(arrs, folder, test_step, model):
         else:
             out_path = os.path.join(folder, f"{key}_{test_step}.txt")
             np.savetxt(out_path, arr)
-            
+
 
 @staticmethod
 def save_metrics_csv(
-        raw_df, 
-        cols, 
-        out_dir, 
-        raw_name="metrics_raw.csv", 
-        summary_name="metrics.csv",
-    ):
+    raw_df,
+    cols,
+    out_dir,
+    raw_name="metrics_raw.csv",
+    summary_name="metrics.csv",
+):
     """Save a raw per-step metrics dict to CSV, plus a one-row
     summary CSV of column means."""
     os.makedirs(out_dir, exist_ok=True)
