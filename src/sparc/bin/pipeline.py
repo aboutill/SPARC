@@ -3,6 +3,7 @@ import os
 import yaml
 import argparse
 import pathlib
+import logging
 
 from sparc.pipeline import Pipeline
 from sparc.cfg import PIPELINE_DEFAULT_CFG_PATH
@@ -258,9 +259,10 @@ def main():
         models_reo_cfg_path=args.models_reo_cfg,
     )
     
+    
     # Batch processing
     if args.batch:
-            
+        
         # Build subject list
         sub_ids = [dirname for dirname in os.listdir(args.input) 
                    if os.path.isdir(os.path.join(args.input, dirname))]
@@ -268,6 +270,8 @@ def main():
         if not sub_ids:
             raise ValueError(f"No subject subdirectories found in {args.input}"
                              " for batch processing.")
+        
+        failed_sub_ids = []
         
         for sub_id in sub_ids:
             
@@ -277,18 +281,35 @@ def main():
             file_prefix = sub_id
             
             # Run gated pipeline
-            pipeline.run(
-                input_dir=sub_input_dir,
-                output_dir=sub_output_dir,
-                file_prefix=file_prefix,
-                mode=args.mode,
-                gui_mode=args.gui_mode,
-                manual_stack_review=args.manual_stack_review,
-                verbose=args.verbose,
-                profile=args.profile,
-                debug=args.debug,
-                log=args.log,
-            )
+            try:
+                pipeline.run(
+                    input_dir=sub_input_dir,
+                    output_dir=sub_output_dir,
+                    file_prefix=file_prefix,
+                    mode=args.mode,
+                    gui_mode=args.gui_mode,
+                    manual_stack_review=args.manual_stack_review,
+                    verbose=args.verbose,
+                    profile=args.profile,
+                    debug=args.debug,
+                    log=args.log,
+                )
+            except Exception:
+                logging.exception(
+                    f"Subject {sub_id} failed with an unhandled exception, "
+                    "continuing with the remaining subjects."
+                )
+                failed_sub_ids.append(sub_id)
+        
+        # Summary
+        n_total = len(sub_ids)
+        n_failed = len(failed_sub_ids)
+        logging.info(
+            f"Batch complete: {n_total - n_failed}/{n_total} subjects "
+            f"finished without raising an exception."
+        )
+        if failed_sub_ids:
+            logging.info(f"Subjects that raised an exception: {failed_sub_ids}")
     
     # Subject processing
     else:
