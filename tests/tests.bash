@@ -46,13 +46,6 @@ run_test() {
   echo
 }
 
-run_test "Test 9: batch processings" \
-  --input="${INPUT_DIR}" \
-  --output="${OUTPUT_DIR}/batch" \
-  --mode="full_auto" \
-  --batch
-
-exit
 # =============================================================================
 # Tests
 # =============================================================================
