@@ -21,8 +21,8 @@ class EnsembleTester:
         save_metrics_csv,
     )
     from ._qc import (
-        _quality_control,
-        _save_quality_control_report,
+        quality_control,
+        save_quality_control_report,
     )
     from ._run import (
         _ensemble_prediction,
@@ -74,35 +74,38 @@ class EnsembleTester:
     
     def _predict_ensemble(self, img, rotation_avg="chordal", t_max=1/3):
         """Run every ensemble member's forward pass once on `img` and
-        aggregate. Returns (avg_affine_matrix [1,4,4], per_model_affine
-        [n_models,4,4]), both as tensors on self.device.
+        aggregate per sample. Returns (avg_affine_matrix, per_model_affine):
+        avg_affine_matrix is (batch, 4, 4); per_model_affine is
+        (n_models, batch, 4, 4).
         """
-       
+        batch_size = img.shape[0]
+
         affine_matrix_preds = []
         for model in self.models:
             model.net.eval()
             with torch.no_grad():
                 points_pred, _ = model.net(img)
-                affine_matrix_preds.append(model.points_to_matrix(points_pred))
-        affine_matrix_preds = torch.cat(affine_matrix_preds, dim=0)
+                affine_matrix_preds.append(model.points_to_matrix(points_pred))  # (batch, 4, 4)
+        affine_matrix_preds = torch.stack(affine_matrix_preds, dim=0)  # (n_models, batch, 4, 4)
 
         roi_size = self.transforms_cfg["roi_size"]
         t_min = [-t_max*s for s in roi_size]
-        t_max = [t_max*s for s in roi_size]
-        t_preds = affine_matrix_preds[:, :3, 3]
-        avg_t = t_preds.mean(axis=0).cpu().numpy()
-        avg_t = np.clip(avg_t, t_min, t_max)
+        t_max_bound = [t_max*s for s in roi_size]
 
-        R_preds = affine_matrix_preds[:, :3, :3].cpu().numpy()
-        avg_R = self.average_rotations(rotations=R_preds, method=rotation_avg)
+        t_preds = affine_matrix_preds[:, :, :3, 3]                 # (n_models, batch, 3)
+        R_preds = affine_matrix_preds[:, :, :3, :3].cpu().numpy()  # (n_models, batch, 3, 3)
 
-        avg_affine_matrix = np.eye(4)
-        avg_affine_matrix[:3, :3] = avg_R
-        avg_affine_matrix[:3, 3] = avg_t
+        avg_affine_matrices = np.tile(np.eye(4), (batch_size, 1, 1))  # (batch, 4, 4)
+        for b in range(batch_size):
+            avg_t = t_preds[:, b, :].mean(axis=0).cpu().numpy()
+            avg_t = np.clip(avg_t, t_min, t_max_bound)
+            avg_R = self.average_rotations(rotations=R_preds[:, b, :, :], method=rotation_avg)
+            avg_affine_matrices[b, :3, :3] = avg_R
+            avg_affine_matrices[b, :3, 3] = avg_t
+
         avg_affine_matrix = (
-            torch.from_numpy(avg_affine_matrix)
+            torch.from_numpy(avg_affine_matrices)
             .to(dtype=torch.float32, device=self.device)
-            .unsqueeze(0)
         )
 
         return avg_affine_matrix, affine_matrix_preds

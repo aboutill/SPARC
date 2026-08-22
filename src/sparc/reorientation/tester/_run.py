@@ -16,7 +16,14 @@ def _ensemble_prediction(
         rotation_avg="chordal", 
         qc_report_path=None,
     ):
-    """Run ensemble pose prediction on a single-item test_ds."""
+    """Run ensemble pose prediction on a single-item test_ds.
+
+    Returns (avg_affine_matrix, affine_matrices) as (4,4) and
+    (n_models,4,4) numpy arrays."""
+    assert len(test_ds) == 1, (
+        f"_ensemble_prediction expects a single-item test_ds, got {len(test_ds)} items."
+    )
+
     test_loader = DataLoader(
         dataset=test_ds,
         batch_size=1,
@@ -30,15 +37,16 @@ def _ensemble_prediction(
             img=img,
             rotation_avg=rotation_avg,
         )
+        # avg_affine_matrix: (1, 4, 4); affine_matrices: (n_models, 1, 4, 4)
 
     if qc_report_path:
-        self._save_quality_control_report(
+        self.save_quality_control_report(
             affine_matrices=affine_matrices,
             output_path=qc_report_path,
         )
         
-    avg_affine_matrix = avg_affine_matrix.squeeze(0).cpu().numpy()
-    affine_matrices = affine_matrices.cpu().numpy()
+    avg_affine_matrix = avg_affine_matrix.squeeze(0).cpu().numpy()  # (4, 4)
+    affine_matrices = affine_matrices.squeeze(1).cpu().numpy()
 
     return avg_affine_matrix, affine_matrices
 
@@ -46,7 +54,7 @@ def _ensemble_prediction(
 def _ensemble_prediction_batch_with_sampling(
         self,
         img,
-        file_path,
+        file_paths,
         test_step,
         metrics_raw_df,
         indiv_metrics_raw_df=None,
@@ -55,12 +63,17 @@ def _ensemble_prediction_batch_with_sampling(
         translate_range=None,
         rotation_avg="chordal",
     ):
-    """Simulate a random ground-truth pose for one subject, run
-    ensemble inference on it, record metrics, and (if requested)
-    per-model predictions and inter-model QC."""
+    """Simulate an independent random ground-truth pose per sample in
+    the batch, run ensemble inference, record metrics, and return a
+    list of per-sample dicts (and, if requested, per-sample lists of
+    per-model dicts) for saving.
+    """
     model = self.models[0]
+    batch_size = img.shape[0]
+
+    # Each sample now gets its own independent pose.
     affine_matrix, (angle, t) = model.init_affine_matrix(
-        n=1, r_range=rotate_range, t_range=translate_range,
+        n=batch_size, r_range=rotate_range, t_range=translate_range,
     )
     inv_affine_matrix = model.invert_affine_matrix(affine_matrix)
 
@@ -70,6 +83,7 @@ def _ensemble_prediction_batch_with_sampling(
         img=img_def,
         rotation_avg=rotation_avg,
     )
+    # avg_affine_matrix: (batch, 4, 4); affine_matrix_preds: (n_models, batch, 4, 4)
 
     img_pred, _ = model.apply_transform(img_def, avg_affine_matrix)
 
@@ -77,79 +91,79 @@ def _ensemble_prediction_batch_with_sampling(
     t_gt, t_pred = inv_affine_matrix[:, :3, 3], avg_affine_matrix[:, :3, 3]
     points_pred = model.matrix_to_points(avg_affine_matrix)
 
-    img_gt = img.detach().cpu().numpy().squeeze()
-    img_pred_np = img_pred.detach().cpu().numpy().squeeze()
+    img_gt_np = img.detach().cpu().numpy().squeeze(1)
+    img_pred_np = img_pred.detach().cpu().numpy().squeeze(1)
+    img_def_np = img_def.detach().cpu().numpy().squeeze(1)
 
-    gd = model.geodesic_distance(R_gt, R_pred)
-    td = model.translation_distance(t_gt, t_pred)
+    gd = model.geodesic_distance(R_gt, R_pred, reduction="none")
+    cd = model.centre_distance(t_gt, t_pred, reduction="none")
 
-    metrics_raw_df["filename"].append(file_path)
-    metrics_raw_df["angle"].append(angle[0])
-    metrics_raw_df["translation"].append(np.linalg.norm(t))
-    metrics_raw_df["geodesic-distance"].append(gd.item())
-    metrics_raw_df["translation-distance"].append(td.item())
-    metrics_raw_df["step"].append(test_step)
+    avg_affine_matrix_np = avg_affine_matrix.detach().cpu().numpy()  # (batch, 4, 4)
+    points_pred_np = points_pred.detach().cpu().numpy()              # (batch, ...)
 
-    img_def_np = img_def.detach().cpu().numpy().squeeze()
-    avg_affine_matrix_np = avg_affine_matrix.detach().cpu().numpy().squeeze()
-    points_pred_np = points_pred.detach().cpu().numpy().squeeze()
+    per_sample_arrs = []
+    for b in range(batch_size):
+        metrics_raw_df["filename"].append(file_paths[b])
+        metrics_raw_df["angle"].append(angle[b])
+        metrics_raw_df["translation"].append(np.linalg.norm(t[b]))
+        metrics_raw_df["geodesic-distance"].append(gd[b].item())
+        metrics_raw_df["center-distance"].append(cd[b].item())
+        metrics_raw_df["step"].append(test_step)
 
-    arrs = {
-        "img_gt": img_gt,
-        "img_def": img_def_np,
-        "img_pred": img_pred_np,
-        "affine_matrix": avg_affine_matrix_np,
-        "anchor_points": points_pred_np,
-    }
+        per_sample_arrs.append({
+            "img_gt": img_gt_np[b],
+            "img_def": img_def_np[b],
+            "img_pred": img_pred_np[b],
+            "affine_matrix": avg_affine_matrix_np[b],
+            "anchor_points": points_pred_np[b],
+        })
 
-    indiv_arrs = [] if indiv_metrics_raw_df is not None else None
+    per_sample_indiv_arrs = [[] for _ in range(batch_size)] if indiv_metrics_raw_df is not None else None
 
     if indiv_metrics_raw_df is not None or qc_raw_df is not None:
-        for i, model_i in enumerate(self.models):
-            affine_matrix_pred_i = affine_matrix_preds[i].unsqueeze(0)
+        if indiv_metrics_raw_df is not None:
+            for i, model_i in enumerate(self.models):
+                affine_matrix_pred_i = affine_matrix_preds[i]
 
-            if indiv_metrics_raw_df is None:
-                continue
+                img_pred_i, _ = model_i.apply_transform(img_def, affine_matrix_pred_i)
 
-            img_pred_i, _ = model_i.apply_transform(img_def, affine_matrix_pred_i)
+                R_gt_i, R_pred_i = inv_affine_matrix[:, :3, :3], affine_matrix_pred_i[:, :3, :3]
+                t_gt_i, t_pred_i = inv_affine_matrix[:, :3, 3], affine_matrix_pred_i[:, :3, 3]
 
-            R_gt_i, R_pred_i = inv_affine_matrix[:, :3, :3], affine_matrix_pred_i[:, :3, :3]
-            t_gt_i, t_pred_i = inv_affine_matrix[:, :3, 3], affine_matrix_pred_i[:, :3, 3]
+                gd_i = model_i.geodesic_distance(R_gt_i, R_pred_i, reduction="none")
+                cd_i = model_i.centre_distance(t_gt_i, t_pred_i, reduction="none")
 
-            gd_i = model_i.geodesic_distance(R_gt_i, R_pred_i)
-            td_i = model_i.translation_distance(t_gt_i, t_pred_i)
+                img_pred_i_np = img_pred_i.detach().cpu().numpy().squeeze(1)
+                affine_matrix_pred_i_np = affine_matrix_pred_i.detach().cpu().numpy()
+                points_pred_i_np = model_i.matrix_to_points(affine_matrix_pred_i).detach().cpu().numpy()
 
-            indiv_metrics_raw_df[i]["filename"].append(file_path)
-            indiv_metrics_raw_df[i]["angle"].append(angle[0])
-            indiv_metrics_raw_df[i]["translation"].append(np.linalg.norm(t))
-            indiv_metrics_raw_df[i]["geodesic-distance"].append(gd_i.item())
-            indiv_metrics_raw_df[i]["translation-distance"].append(td_i.item())
-            indiv_metrics_raw_df[i]["step"].append(test_step)
+                for b in range(batch_size):
+                    indiv_metrics_raw_df[i]["filename"].append(file_paths[b])
+                    indiv_metrics_raw_df[i]["angle"].append(angle[b])
+                    indiv_metrics_raw_df[i]["translation"].append(np.linalg.norm(t[b]))
+                    indiv_metrics_raw_df[i]["geodesic-distance"].append(gd_i[b].item())
+                    indiv_metrics_raw_df[i]["center-distance"].append(cd_i[b].item())
+                    indiv_metrics_raw_df[i]["step"].append(test_step)
 
-            img_pred_i_np = img_pred_i.detach().cpu().numpy().squeeze()
-            affine_matrix_pred_i_np = affine_matrix_pred_i.detach().cpu().numpy().squeeze()
-            points_pred_i_np = (
-                model_i.matrix_to_points(affine_matrix_pred_i).detach().cpu().numpy().squeeze()
-            )
-
-            indiv_arrs.append({
-                "img_gt": img_gt,
-                "img_def": img_def_np,
-                "img_pred": img_pred_i_np,
-                "affine_matrix": affine_matrix_pred_i_np,
-                "anchor_points": points_pred_i_np,
-            })
+                    per_sample_indiv_arrs[b].append({
+                        "img_gt": img_gt_np[b],
+                        "img_def": img_def_np[b],
+                        "img_pred": img_pred_i_np[b],
+                        "affine_matrix": affine_matrix_pred_i_np[b],
+                        "anchor_points": points_pred_i_np[b],
+                    })
 
         if qc_raw_df is not None:
-            gds, cds = self._quality_control(affine_matrix_preds)
-            qc_raw_df["filename"].append(file_path)
-            qc_raw_df["angle"].append(angle[0])
-            qc_raw_df["translation"].append(np.linalg.norm(t))
-            qc_raw_df["GD_QC"].append(np.mean(gds))
-            qc_raw_df["CD_QC"].append(np.mean(cds))
-            qc_raw_df["step"].append(test_step)
+            gds, cds = self.quality_control(affine_matrix_preds)
+            for b in range(batch_size):
+                qc_raw_df["filename"].append(file_paths[b])
+                qc_raw_df["angle"].append(angle[b])
+                qc_raw_df["translation"].append(np.linalg.norm(t[b]))
+                qc_raw_df["GD_QC"].append(np.mean(gds[b]))
+                qc_raw_df["CD_QC"].append(np.mean(cds[b]))
+                qc_raw_df["step"].append(test_step)
 
-    return arrs, indiv_arrs
+    return per_sample_arrs, per_sample_indiv_arrs
 
 
 def _ensemble_prediction_step_with_sampling(
@@ -163,32 +177,34 @@ def _ensemble_prediction_step_with_sampling(
         rotate_range=None,
         translate_range=None,
     ):
-    """Run one simulated-pose evaluation step over every subject
-    in test_loader, saving predictions and recording metrics."""
+    """Run one simulated-pose evaluation step over every subject in
+    test_loader, saving predictions and recording metrics."""
     n_models = len(self.models)
     model = self.models[0]
 
     for batch in test_loader:
         img = batch["image"].to(model.device, non_blocking=True)
-        file_path = batch["image_meta_dict"]["filename_or_obj"][0]
+        file_paths = batch["image_meta_dict"]["filename_or_obj"]
 
-        arrs, indiv_arrs = self._ensemble_prediction_batch_with_sampling(
-            img=img, file_path=file_path, test_step=test_step,
+        per_sample_arrs, per_sample_indiv_arrs = self._ensemble_prediction_batch_with_sampling(
+            img=img, file_paths=file_paths, test_step=test_step,
             metrics_raw_df=metrics_raw_df, indiv_metrics_raw_df=indiv_metrics_raw_df,
             qc_raw_df=qc_raw_df, rotation_avg=rotation_avg,
             rotate_range=rotate_range, translate_range=translate_range,
         )
 
-        dirname = os.path.dirname(file_path)
-        folder = dirname.replace(self.data_root_dir, self.prediction_dir)
-        os.makedirs(folder, exist_ok=True)
-        self.save_arrs(arrs, folder, test_step, model)
+        for b, (file_path, arrs) in enumerate(zip(file_paths, per_sample_arrs)):
+            dirname = os.path.dirname(file_path)
+            folder = dirname.replace(self.data_root_dir, self.prediction_dir)
+            os.makedirs(folder, exist_ok=True)
 
-        if self.indiv_prediction_dirs is not None:
-            for i in range(n_models):
-                folder_i = dirname.replace(self.data_root_dir, self.indiv_prediction_dirs[i])
-                os.makedirs(folder_i, exist_ok=True)
-                self.save_arrs(indiv_arrs[i], folder_i, test_step, model)
+            self.save_arrs(arrs, folder, test_step, model)
+
+            if self.indiv_prediction_dirs is not None:
+                for i in range(n_models):
+                    folder_i = dirname.replace(self.data_root_dir, self.indiv_prediction_dirs[i])
+                    os.makedirs(folder_i, exist_ok=True)
+                    self.save_arrs(per_sample_indiv_arrs[b][i], folder_i, test_step, model)
 
 
 def _ensemble_prediction_with_sampling(
@@ -202,9 +218,10 @@ def _ensemble_prediction_with_sampling(
         translate_range=None,
         workers=8,
     ):
-    """Run repeated simulated-pose evaluation passes
-    over test_ds, saving predictions, metrics, and (optionally)
-    per-model outputs and inter-model QC."""
+    """Run repeated simulated-pose evaluation passes over test_ds,
+    saving predictions, metrics, and (optionally) per-model outputs
+    and inter-model QC.
+    """
     n_models = len(self.models)
 
     if save_indiv:
@@ -219,12 +236,12 @@ def _ensemble_prediction_with_sampling(
 
     test_loader = DataLoader(
         dataset=test_ds, 
-        batch_size=1, 
+        batch_size=len(test_ds), 
         shuffle=False, 
         num_workers=workers,
     )
 
-    metrics_str = ["geodesic-distance", "translation-distance"]
+    metrics_str = ["geodesic-distance", "center-distance"]
     headers_str = ["filename", "angle", "translation", "step"]
     qc_str = ["GD_QC", "CD_QC"]
 
@@ -247,17 +264,11 @@ def _ensemble_prediction_with_sampling(
 
     if save_indiv:
         for i in range(n_models):
-            self.save_metrics_csv(
-                indiv_metrics_raw_df[i], 
-                metrics_str, 
-                self.indiv_metrics_dirs[i],
-            )
+            self.save_metrics_csv(indiv_metrics_raw_df[i], metrics_str, self.indiv_metrics_dirs[i])
 
     if save_qc:
         self.save_metrics_csv(
-            qc_raw_df, 
-            qc_str, 
-            self.qc_dir,
+            qc_raw_df, qc_str, self.qc_dir,
             raw_name="quality_control_raw.csv",
             summary_name="quality_control.csv",
         )
@@ -274,8 +285,7 @@ def run(
         verbose=False,
         log=False,
     ):
-    """Run simulated-pose ensemble evaluation over every subject
-    in input_dir."""
+    """Run simulated-pose ensemble evaluation over every subject in input_dir."""
     input_dir = os.path.abspath(input_dir)
     output_dir = os.path.abspath(output_dir)
     models_dir = os.path.abspath(models_dir)
@@ -289,17 +299,10 @@ def run(
     datalist = init_datalist(input_dir=input_dir, img=self.data_cfg["img"])
     
     report_path = os.path.join(output_dir, "sparc_reorientation_test.json")
-    self.save_model_info(
-        datalist=datalist,
-        output_path=report_path,
-    )
+    self.save_model_info(datalist=datalist, output_path=report_path)
     
     subjects = sorted(datalist.keys())
-    test_set = [
-        datalist[s][j] 
-        for s in subjects 
-        for j in range(len(datalist[s]))
-    ]
+    test_set = [datalist[s][j] for s in subjects for j in range(len(datalist[s]))]
 
     self.load_ensemble(models_dir)
 
@@ -338,8 +341,7 @@ def run_from_file(
         verbose=False,
         log=False,
     ):
-    """Run ensemble inference on a single input file, saving the
-    averaged affine matrix (and optionally per-model matrices/QC)."""
+    """Run ensemble inference on a single input file"""
     input_path = os.path.abspath(input_path)
     output_path = os.path.abspath(output_path)
     models_dir = os.path.abspath(models_dir)
