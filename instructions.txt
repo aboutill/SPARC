@@ -229,8 +229,8 @@ variable in runSPARC.bash, or pass --cfg directly.
      (or wherever you installed it, see PREFIX in the Makefile)
   2. Check that location is on your PATH:
        echo $PATH | tr ':' '\n' | grep local/bin
-     If nothing prints, either add it to your shell rc file, or run
-     `make install-path`, or reinstall system-wide:
+     If nothing prints, either add it to your shell rc file, or 
+     reinstall system-wide:
        sudo make install PREFIX=/usr/local/bin
 
 ITK-SNAP doesn't open during review
