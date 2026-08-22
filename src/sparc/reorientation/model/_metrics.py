@@ -69,6 +69,21 @@ def translation_distance(t_gt, t_pred, reduction="mean"):
     return loss
 
 
+def centre_distance(self, t_gt, t_pred, reduction="mean"):
+    """Euclidean (centre) distance between predicted and
+    ground-truth translation vectors.
+    """
+    pixdim_t = torch.as_tensor(self.pixdim, dtype=t_gt.dtype, device=t_gt.device)
+    dists = torch.sqrt((((t_gt - t_pred)*pixdim_t) ** 2).sum(dim=-1))
+
+    if reduction == "none":
+        return dists
+    elif reduction == "mean":
+        return dists.mean()
+    elif reduction == "sum":
+        return dists.sum()
+
+
 @staticmethod
 def peak_signal_to_noise_ratio(img_gt, img_pred, mask=None, reduction="mean"):
     """PSNR between two images, optionally restricted to a mask."""
