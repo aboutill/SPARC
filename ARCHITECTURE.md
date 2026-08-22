@@ -7,7 +7,7 @@ This document describes the four layers the SPARC project is organized into, and
 │  make        ONE-TIME SETUP                        Makefile    │
 │              Get `SPARC` onto PATH, pull the Docker image.     │
 ├────────────────────────────────────────────────────────────────┤
-│  bash        ORCHESTRATION                         scripts/    │ 
+│  bash        ORCHESTRATION                         scripts/    │
 │              Parse CLI flags, decide what to mount,            │
 │              launch Docker. Never does computation.            │
 ├────────────────────────────────────────────────────────────────┤

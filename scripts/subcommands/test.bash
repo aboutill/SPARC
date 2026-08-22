@@ -99,7 +99,7 @@ done
 if [[ "${conf}" != false ]]; then
   [[ -f "${conf}" ]] || die "conf file not found: ${conf}"
   source "${conf}"
-  
+
   conf_dir=$(cd -- "$(dirname -- "$(readlink -f -- "${conf}")")/" &> /dev/null && pwd)
   resolve_path_conf() {
     local p="$1"
@@ -112,13 +112,13 @@ if [[ "${conf}" != false ]]; then
 
   [[ -n "${input}" ]] || die "missing value for input"
   input="$(resolve_path_conf "${input}")"
-  
+
   [[ -n "${output}" ]] || die "missing value for output"
   output="$(resolve_path_conf "${output}")"
-  
+
   [[ -n "${cfg}" ]] || die "missing value for cfg"
   cfg="$(resolve_path_conf "${cfg}")"
-  
+
   [[ -n "${models}" ]] || die "missing value for models"
   models="$(resolve_path_conf "${models}")"
 fi
@@ -130,7 +130,7 @@ while [[ $# -gt 0 ]]; do
     -f|--conf)
       shift 2 ;;
     --conf=*)
-      shift ;; 
+      shift ;;
     -i|--input)
       require_value "$1" "${2:-}"; input="$2"; shift 2 ;;
     --input=*)
@@ -155,13 +155,13 @@ while [[ $# -gt 0 ]]; do
       require_value "$1" "${2:-}"; workers="$2"; shift 2 ;;
     --workers=*)
       require_value "$1" "${1#*=}"; workers="${1#*=}"; shift ;;
-    --save_qc) 
+    --save_qc)
       save_qc=true; shift ;;
-    --save_indiv) 
+    --save_indiv)
       save_indiv=true; shift ;;
-    --verbose) 
+    --verbose)
       verbose=true; shift ;;
-    --log)     
+    --log)
       log=true; shift ;;
     *) die "unknown option: $1 (see --help)" ;;
   esac
@@ -224,7 +224,7 @@ app_cmd=(
 [[ "${log}" == true ]] && app_cmd+=( --log )
 
 
-docker_flags=( 
+docker_flags=(
   --user "$(id -u):$(id -g)"
   --volume "${host_input_dir}:${DOCKER_INPUT_DIR}:ro"
   --volume "${host_cfg_dir}:${DOCKER_CFG_DIR}:ro"
@@ -244,5 +244,5 @@ docker run \
   "${docker_flags[@]}" \
   "${DOCKER_IMG}" \
   "${app_cmd[@]}"
-  
+
 echo "Done!"

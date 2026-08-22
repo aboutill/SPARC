@@ -69,12 +69,12 @@ By default, the pipeline runs in semi_auto mode, and ITK-SNAP will
 open at four stages so you can check the input data and deep-learning
 network's output:
 
-  1) Right after preprocessing, an optional manual stack review can be 
+  1) Right after preprocessing, an optional manual stack review can be
      performed. For each stack, ITK-SNAP will open:
        a. Stack inclusion or exclusion. Exclude if there is too
           much motion-corruption.
-       b. Diastole frame index identification for included stacks. 
-          The cardiac phases are then temporally aligned among all 
+       b. Diastole frame index identification for included stacks.
+          The cardiac phases are then temporally aligned among all
           included stack.
 
   2) Thoracic segmentation on the template stack. Check that the

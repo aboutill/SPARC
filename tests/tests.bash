@@ -51,7 +51,7 @@ run_test "Test 9: batch processings" \
   --output="${OUTPUT_DIR}/batch" \
   --mode="full_auto" \
   --batch
-  
+
 exit
 # =============================================================================
 # Tests
@@ -112,7 +112,7 @@ run_test "Test 7: manual stack review" \
   --file_prefix="${SUB_ID}" \
   --mode="semi_auto" \
   --manual_stack_review
-  
+
 cfgs=("pipeline1" "pipeline2")
 for cfg in "${cfgs[@]}"; do
   run_test "Test 8: cfg=${CFG_DIR}/${cfg}.yaml" \
@@ -128,7 +128,7 @@ run_test "Test 9: batch processings" \
   --output="${OUTPUT_DIR}/batch" \
   --mode="full_auto" \
   --batch
-  
+
 # =============================================================================
 # Summary
 # =============================================================================

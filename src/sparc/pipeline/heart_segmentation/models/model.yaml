@@ -30,14 +30,14 @@ inferer:
   - 48
   - 48
   padding_mode: reflect
-  
+
 # Image transform
 transforms:
   pixdim:
   - 2
   - 2
   - 2
-  
+
 # Post processing
 post_processing:
   connectivity: null

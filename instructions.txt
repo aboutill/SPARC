@@ -2,7 +2,7 @@
 SPARC PIPELINE -- INSTRUCTIONS
 ==============================================================================
 
-This file covers how to install and run the SPARC pipeline. 
+This file covers how to install and run the SPARC pipeline.
 For additional documentation (training/testing your own models,
 reproducing the paper's statistical analysis), see README.md.
 
@@ -22,13 +22,13 @@ You only need to do this once per machine.
 
      If this doesn't list your GPU, fix that before continuing. The
      pipeline will still run without it, but far more slowly.
-     
-     To run Docker without root privileges, create the docker group and add 
+
+     To run Docker without root privileges, create the docker group and add
      your user:
-       
+
        sudo groupadd docker
        sudo usermod -aG docker $USER
-       
+
      Log out and log back in so that your group membership is re-evaluated.
 
   2. Clone the repository and install:
@@ -141,12 +141,12 @@ By default, the pipeline runs in semi_auto mode, and ITK-SNAP will
 open at four stages so you can check the input data and deep-learning
 network's output:
 
-  1) Right after preprocessing, an optional manual stack review can be 
+  1) Right after preprocessing, an optional manual stack review can be
      performed. For each stack, ITK-SNAP will open:
        a. Stack inclusion or exclusion. Exclude if there is too
           much motion-corruption.
-       b. Diastole frame index identification for included stacks. 
-          The cardiac phases are then temporally aligned among all 
+       b. Diastole frame index identification for included stacks.
+          The cardiac phases are then temporally aligned among all
           included stack.
 
   2) Thoracic segmentation on the template stack. Check that the
@@ -184,7 +184,7 @@ What to expect during a review step (docker mode):
       q = quit the pipeline run entirely for this case
   - If you press q, the run stops for that case. Nothing after that
     point is produced. For a batch run, other cases are unaffected.
-    
+
 
 ==============================================================================
 6. OUTPUT STRUCTURE
@@ -212,7 +212,7 @@ error but still have a QC flag worth a manual look.
 ==============================================================================
 
 The pipeline's behaviour is set in cfg/pipeline.yaml (documented inline).
-If you're running on data from a new scanner/site, check the "preprocessing" 
+If you're running on data from a new scanner/site, check the "preprocessing"
 section first. The DICOM tag names used to identify magnitude/phase images,
 RR intervals, and acquisition parameters can vary by vendor.
 
@@ -229,7 +229,7 @@ variable in runSPARC.bash, or pass --cfg directly.
      (or wherever you installed it, see PREFIX in the Makefile)
   2. Check that location is on your PATH:
        echo $PATH | tr ':' '\n' | grep local/bin
-     If nothing prints, either add it to your shell rc file, or 
+     If nothing prints, either add it to your shell rc file, or
      reinstall system-wide:
        sudo make install PREFIX=/usr/local/bin
 

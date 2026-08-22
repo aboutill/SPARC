@@ -83,16 +83,16 @@ host_workdir="$(resolve_path "${workdir}")"
 # Build command
 # =============================================================================
 app_cmd=(
-  jupyter notebook 
+  jupyter notebook
   --ip=0.0.0.0
   --port="${PORT}"
   --no-browser
 )
 
-docker_flags=( 
-  --rm 
-  --user "$(id -u):$(id -g)" 
-  -p "${PORT}":"${PORT}" 
+docker_flags=(
+  --rm
+  --user "$(id -u):$(id -g)"
+  -p "${PORT}":"${PORT}"
   --volume "${host_workdir}:${DOCKER_WORKDIR}"
 )
 [[ -t 0 && -t 1 ]] && docker_flags+=( -it )
@@ -106,5 +106,5 @@ docker run \
   "${docker_flags[@]}" \
   "${DOCKER_IMG}" \
   "${app_cmd[@]}"
-  
+
 echo "Done!"

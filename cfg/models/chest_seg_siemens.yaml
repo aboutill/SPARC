@@ -2,7 +2,7 @@
 data:
   img: mag.nii.gz
   mask: mask_chest.nii.gz
-  
+
 # Image and mask transforms
 transforms:
   bias_field_range:
@@ -40,7 +40,7 @@ transforms:
   - 10
   - 2
 
-# UNet architecture  
+# UNet architecture
 unet:
   act: RELU
   bias: false
@@ -62,8 +62,8 @@ unet:
   - 2
   - 2
   up_kernel_size: 3
-  
-# UNet training 
+
+# UNet training
 train:
   batch_size: 64
   epochs: 400

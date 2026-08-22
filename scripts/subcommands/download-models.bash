@@ -4,7 +4,7 @@
 #
 # Download pretrained model weights from Hugging Face for the chest
 # segmentation, heart segmentation, and reorientation components.
-# For use as a transfer-learning starting point with 
+# For use as a transfer-learning starting point with
 # `train.bash --models <path>`.
 #
 # =============================================================================
@@ -118,15 +118,15 @@ download_one() {
   local repo_name="${HF_REPO_NAMES[${comp}]}"
   local repo_id="${HF_ORG}/${repo_name}"
   local dest_dir="${host_output}/${comp}/${var}"
- 
+
   if [[ -d "${dest_dir}" && "${force}" != true ]]; then
     echo "  [skip] ${comp}/${var} already present (use --force to re-download)"
     return
   fi
- 
+
   echo "  Downloading ${repo_id} @ ${var} -> ${dest_dir}"
   mkdir -p "${dest_dir}"
-  
+
   app_cmd=(
     hf download
     "${repo_id}"
@@ -146,7 +146,7 @@ download_one() {
     "${DOCKER_IMG}" \
     "${app_cmd[@]}" \
   || die "failed to download ${repo_id} @ ${var} does this repo/revision exist?"
- 
+
   echo "  Done: ${comp}/${var}"
 }
 

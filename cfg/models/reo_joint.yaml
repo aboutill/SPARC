@@ -2,7 +2,7 @@
 data:
   img: mag.nii.gz
   mask: mask.nii.gz
-  
+
 # Image and mask transforms
 transforms:
   bias_field_range:
@@ -27,7 +27,7 @@ transforms:
   - 1.1
 
 # ViT architecture
-vit: 
+vit:
   hidden_size: 768
   in_channels: 1
   mlp_dim: 3072
@@ -41,7 +41,7 @@ vit:
   pos_embed_type: sincos
   proj_type: conv
   spatial_dims: 3
-  
+
 # ViT training
 train:
   batch_size: 1024
@@ -63,13 +63,13 @@ train:
   prob_background_mask: 0.4
   prob_dilate: 1.0
   prob_erode: 1.0
-  dilate_range: 
+  dilate_range:
   - 5
   - 10
   erode_range:
   - 1
   - 10
-  
+
 # ViT validation
 val:
   num_val: 250
@@ -94,4 +94,3 @@ test:
   - 5.0
   - 5.0
   - 5.0
-

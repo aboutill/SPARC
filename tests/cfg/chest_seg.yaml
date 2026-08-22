@@ -5,7 +5,7 @@ transforms:
   - 2
   - 2
 
-# UNet architecture  
+# UNet architecture
 unet:
   act: RELU
   bias: false
@@ -27,7 +27,7 @@ unet:
   - 2
   - 2
   up_kernel_size: 3
-  
+
 # Inferer
 inferer:
   overlap: 0.25

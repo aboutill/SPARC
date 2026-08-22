@@ -110,7 +110,7 @@ done
 if [[ "${conf}" != false ]]; then
   [[ -f "${conf}" ]] || die "conf file not found: ${conf}"
   source "${conf}"
-  
+
   conf_dir=$(cd -- "$(dirname -- "$(readlink -f -- "${conf}")")/" &> /dev/null && pwd)
   resolve_path_conf() {
     local p="$1"
@@ -120,7 +120,7 @@ if [[ "${conf}" != false ]]; then
       printf '%s\n' "${conf_dir}/${p}"
     fi
   }
-  
+
   [[ -n "${input}" ]] || die "missing value for input"
   [[ -n "${output}" ]] || die "missing value for output"
 
@@ -130,7 +130,7 @@ if [[ "${conf}" != false ]]; then
     [[ -n "${cfg}" ]] || die "missing value for cfg"
     cfg="$(resolve_path_conf "${cfg}")"
   fi
-  
+
   if [[ "${models_chest_seg}" != false ]]; then
     [[ -n "${models_chest_seg}" ]] || die "missing value for models_chest_seg"
     models_chest_seg="$(resolve_path_conf "${models_chest_seg}")"
@@ -143,7 +143,7 @@ if [[ "${conf}" != false ]]; then
     [[ -n "${models_reo}" ]] || die "missing value for models_reo"
     models_reo="$(resolve_path_conf "${models_reo}")"
   fi
-  
+
   if [[ "${models_chest_seg_cfg}" != false ]]; then
     [[ -n "${models_chest_seg_cfg}" ]] || die "missing value for models_chest_seg_cfg"
     models_chest_seg_cfg="$(resolve_path_conf "${models_chest_seg_cfg}")"
@@ -156,7 +156,7 @@ if [[ "${conf}" != false ]]; then
     [[ -n "${models_reo_cfg}" ]] || die "missing value for models_reo_cfg"
     models_reo_cfg="$(resolve_path_conf "${models_reo_cfg}")"
   fi
-  
+
 fi
 
 while [[ $# -gt 0 ]]; do
@@ -166,7 +166,7 @@ while [[ $# -gt 0 ]]; do
     -f|--conf)
       shift 2 ;;
     --conf=*)
-      shift ;; 
+      shift ;;
     -i|--input)
       require_value "$1" "${2:-}"; input="$2"; shift 2 ;;
     --input=*)
@@ -217,15 +217,15 @@ while [[ $# -gt 0 ]]; do
       require_value "$1" "${2:-}"; file_prefix="$2"; shift 2 ;;
     --file_prefix=*)
       require_value "$1" "${1#*=}"; file_prefix="${1#*=}"; shift ;;
-    --manual_stack_review) 
+    --manual_stack_review)
       manual_stack_review=true; shift ;;
-    --verbose) 
+    --verbose)
       verbose=true; shift ;;
-    --profile) 
+    --profile)
       profile=true; shift ;;
-    --log)     
+    --log)
       log=true; shift ;;
-    --debug)   
+    --debug)
       debug=true; shift ;;
     *) die "unknown option: $1 (see --help)" ;;
   esac

@@ -22,7 +22,7 @@ install: pull-image
 	  *":$(PREFIX):"*) ;; \
 	  *) $(MAKE) -s path-hint ;; \
 	esac
-	
+
 path-hint:
 	@case "$$SHELL" in \
 	  */zsh) rc="$(HOME)/.zshrc" ;; \

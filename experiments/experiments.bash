@@ -48,7 +48,7 @@ for i in "${!TASKS[@]}"; do
       --log
     )
     SPARC train "${train_args[@]}"
-    
+
     echo "=== Test: task=${task} domain=${domain} on domain=${domain} ==="
     test_args=(
       --input="${DATA_TEST_DIR}/${task_dir}_${domain}"
@@ -62,7 +62,7 @@ for i in "${!TASKS[@]}"; do
     )
     SPARC test "${test_args[@]}"
   done
-  
+
   echo "=== Test: task=${task} domain=${SRC_DOMAIN} on domain=${TGT_DOMAIN} ==="
   test_args=(
     --input="${DATA_TEST_DIR}/${task_dir}_${TGT_DOMAIN}"
@@ -94,7 +94,7 @@ for i in "${!TASKS[@]}"; do
     --log
   )
   SPARC train "${train_args[@]}"
-  
+
   for domain in "${DOMAINS[@]}"; do
     echo "=== Test: task=${task} Joint on domain=${domain} ==="
     test_args=(
@@ -128,7 +128,7 @@ for i in "${!TASKS[@]}"; do
     --log
   )
   SPARC train "${train_args[@]}"
-  
+
   echo "=== Test: task=${task} Transfer Learning on domain=${TGT_DOMAIN} ==="
   test_args=(
     --input="${DATA_TEST_DIR}/${task_dir}_${TGT_DOMAIN}"

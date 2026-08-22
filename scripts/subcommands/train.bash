@@ -4,8 +4,8 @@
 # train.bash: part of sparc package.
 #
 # Train SPARC deep learning models via the sparc Docker image. Training is
-# performed in n-fold cross-validation (CV) setup. Training can be performed 
-# across multiple-domain defined by separate input directories. Transfer 
+# performed in n-fold cross-validation (CV) setup. Training can be performed
+# across multiple-domain defined by separate input directories. Transfer
 # learning can be activated by providing initialisation model weights. Training
 # can be monitored via tensorboard server.
 #
@@ -58,8 +58,8 @@ usage() {
 Usage: SPARC train [options]
 
 Train deep learning models via the sparc Docker image. Training is
-performed in n-fold cross-validation (CV) setup. Training can be performed 
-across multiple-domain defined by separate input directories. Transfer 
+performed in n-fold cross-validation (CV) setup. Training can be performed
+across multiple-domain defined by separate input directories. Transfer
 learning can be activated by providing initialisation model weights. Training
 can be monitored via tensorboard server.
 
@@ -107,7 +107,7 @@ done
 if [[ "${conf}" != false ]]; then
   [[ -f "${conf}" ]] || die "conf file not found: ${conf}"
   source "${conf}"
-  
+
   conf_dir=$(cd -- "$(dirname -- "$(readlink -f -- "${conf}")")/" &> /dev/null && pwd)
   resolve_path_conf() {
     local p="$1"
@@ -124,13 +124,13 @@ if [[ "${conf}" != false ]]; then
     resolved_input+=("$(resolve_path_conf "${d}")")
   done
   input=("${resolved_input[@]}")
-  
+
   [[ -n "${output}" ]] || die "missing value for output"
   output="$(resolve_path_conf "${output}")"
-  
+
   [[ -n "${cfg}" ]] || die "missing value for cfg"
   cfg="$(resolve_path_conf "${cfg}")"
-  
+
   if [[ "${models}" != false ]]; then
     [[ -n "${models}" ]] || die "missing value for models"
     models="$(resolve_path_conf "${models}")"
@@ -144,7 +144,7 @@ while [[ $# -gt 0 ]]; do
     -f|--conf)
       shift 2 ;;
     --conf=*)
-      shift ;; 
+      shift ;;
     -i|--input)
       require_value "$1" "${2:-}"
       if [[ "${input_set_by_cli}" == false ]]; then
@@ -185,9 +185,9 @@ while [[ $# -gt 0 ]]; do
       require_value "$1" "${2:-}"; workers="$2"; shift 2 ;;
     --workers=*)
       require_value "$1" "${1#*=}"; workers="${1#*=}"; shift ;;
-    --verbose) 
+    --verbose)
       verbose=true; shift ;;
-    --log)     
+    --log)
       log=true; shift ;;
     *) die "unknown option: $1 (see --help)" ;;
   esac
@@ -257,7 +257,7 @@ app_cmd=(
 [[ "${log}" == true ]] && app_cmd+=( --log )
 
 
-docker_flags=( 
+docker_flags=(
   --user "$(id -u):$(id -g)"
   --volume "${host_cfg_dir}:${DOCKER_CFG_DIR}:ro"
   --volume "${host_output_dir}":"${DOCKER_OUTPUT_DIR}"
@@ -290,7 +290,7 @@ docker run \
   "${docker_flags[@]}" \
   "${DOCKER_IMG}" \
   "${tensorboard_cmd[@]}"
-  
+
 echo "Tensorboard server on host at http://localhost:${PORT}"
 
 # Run python command

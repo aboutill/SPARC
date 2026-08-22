@@ -13,10 +13,10 @@ RUN apt-get update \
     	libglib2.0-0 python3-pyqt5 libgtk2.0-dev libpng12-0 libspdlog-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-   
+
 # Install miniconda
 ENV CONDA_DIR=/opt/conda
-RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py311_24.3.0-0-Linux-x86_64.sh -O ~/miniconda.sh \ 
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-py311_24.3.0-0-Linux-x86_64.sh -O ~/miniconda.sh \
     && /bin/bash ~/miniconda.sh -b -p /opt/conda
 
 # Add conda to PATH
@@ -30,10 +30,10 @@ RUN wget -O itksnap.tar.gz 'https://sourceforge.net/projects/itk-snap/files/itk-
     && tar -zxf itksnap.tar.gz -C /opt/ \
     && mv /opt/itksnap-*/ /opt/itksnap/ \
     && rm itksnap.tar.gz
-    
+
 # Add ITK-SNAP to PATH
-ENV PATH="/opt/itksnap/bin/:${PATH}" 
-ENV LD_LIBRARY_PATH=/opt/itksnap/lib/:${LD_LIBRARY_PATH} 
+ENV PATH="/opt/itksnap/bin/:${PATH}"
+ENV LD_LIBRARY_PATH=/opt/itksnap/lib/:${LD_LIBRARY_PATH}
 
 # Install SVR-lite 1.1
 COPY ./src/svr-lite/ /home/svr-lite/
@@ -78,7 +78,7 @@ RUN set -e; \
           --include '*.pth' ; \
       done; \
     done
-    
+
 # Install SPARC python package
 COPY ./src ./src
 COPY pyproject.toml pyproject.toml

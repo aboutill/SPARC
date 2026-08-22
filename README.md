@@ -13,7 +13,7 @@ SPARC combines a physics-informed slice-to-volume reconstruction (SVR) algorithm
 </p>
 
 ---
- 	
+
 ## Preamble
 
 The SPARC pipeline is a research software developed alongside the following: [10.48550/arXiv.2608.18616](https://doi.org/10.48550/arXiv.2608.18616). The pipeline is used to generate the results reported in that manuscript, and this repository is intended to support their reproduction. The Docker image is accessible from Docker Hub at [https://hub.docker.com/r/aboutill/sparc](https://hub.docker.com/r/aboutill/sparc).
