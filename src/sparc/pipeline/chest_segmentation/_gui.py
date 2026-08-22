@@ -1,10 +1,10 @@
 import os
 import shutil
 import logging
-import subprocess
 import datetime
 
 from sparc.utils.io import check_file
+from sparc.tools.itksnap import itksnap_subprocess
 
 
 def gui(
@@ -70,13 +70,10 @@ def gui(
         img_display_path = os.path.join(os.path.basename(parent), filename)
             
         if gui_mode == "docker":
-            itksnap_args = ["itksnap", "-g", img_path]
-            if mode != "manual":
-                itksnap_args += ["-s", manual_mask_path]
-            p = subprocess.Popen(
-                args=itksnap_args,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+            itksnap_mask_path = manual_mask_path if mode != "manual" else None
+            p = itksnap_subprocess(
+                img_path=img_path, 
+                mask_path=itksnap_mask_path,
             )
         else:
             msg = f"Native ITKSNAP: Please open stack {img_display_path}"
@@ -85,15 +82,16 @@ def gui(
             print(msg)
      
         z_smooth = stack_infos[idx]["z_smooth_raw"]
+        choices = ["y", "n", "q"]
+        msg = (
+            f"Stack z-smoothness score: {z_smooth:.2f}\n"
+            f"Please save segmentation as: {mask_display_path}\n"
+            f"Validate segmentation? [{'/'.join(choices)}]"
+        )
         if mode == "manual":
             loop = True
-            choices = ["y", "n", "q"]
             while loop:
-                user_input = input(
-                    f"Stack z-smoothness score: {z_smooth:.2f}\n"
-                    f"Please save segmentation as: {mask_display_path}\n"
-                    f"Validate segmentation? [{'/'.join(choices)}]"
-                )
+                user_input = input(msg)
                 user_input = user_input.lower().strip()
                 mask_exist = os.path.exists(manual_mask_path)
  
@@ -103,13 +101,8 @@ def gui(
                     loop = False
         else:
             user_input = None
-            choices = ["y", "n", "q"]
             while user_input not in choices:
-                user_input = input(
-                    f"Stack z-smoothness score: {z_smooth:.2f}\n"
-                    f"Please save segmentation: {mask_display_path}\n"
-                    f"Validate segmentation? [{'/'.join(choices)}]"
-                )
+                user_input = input(msg)
                 user_input = user_input.lower().strip()
  
         if gui_mode == "docker":

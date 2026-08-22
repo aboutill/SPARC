@@ -6,3 +6,4 @@ from .mrtrix import (
     mrdegibbs,
 )
 from .svrlite import svr_reconstruct
+from .itksnap import itksnap_subprocess

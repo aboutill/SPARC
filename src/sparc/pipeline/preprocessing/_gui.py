@@ -1,7 +1,7 @@
 import os
-import subprocess
 
 from sparc.utils.nii import roll_nii
+from sparc.tools.itksnap import itksnap_subprocess
 
 
 @staticmethod
@@ -43,12 +43,7 @@ def stack_review_gui(
 
         p = None
         if gui_mode == "docker":
-            itksnap_args = ["itksnap", "-g", stack_mag_nii_paths[i]]
-            p = subprocess.Popen(
-                args=itksnap_args,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
+            p = itksnap_subprocess(img_path=stack_mag_nii_paths[i])
         else:
             print(f"Native ITKSNAP: Please open stack {display_path}")
 

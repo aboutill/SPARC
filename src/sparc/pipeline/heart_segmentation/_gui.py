@@ -1,9 +1,9 @@
 import os
 import shutil
-import subprocess
 import datetime
 
 from sparc.utils.io import check_file
+from sparc.tools.itksnap import itksnap_subprocess
 
 
 @staticmethod
@@ -36,28 +36,26 @@ def gui(
     cine_display_path = os.path.join(os.path.basename(parent), filename)
         
     if gui_mode == "docker":
-        itksnap_args = ["itksnap", "-g", cine_nii_path]
-        if mode != "manual":
-            itksnap_args += ["-s", manual_mask_path]
-        p = subprocess.Popen(
-            args=itksnap_args,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+        itksnap_mask_path = manual_mask_path if mode != "manual" else None
+        p = itksnap_subprocess(
+            img_path=cine_nii_path, 
+            mask_path=itksnap_mask_path,
         )
     else:
         msg = f"Native ITKSNAP: Please open cine {cine_display_path}"
         if mode != "manual":
             msg += f" with segmentation {mask_display_path}"
         print(msg)
- 
+    
+    choices = ["y", "q"]
+    msg = (
+        f"Please save segmentation as: {mask_display_path}\n"
+        f"Validate segmentation? [{'/'.join(choices)}]"
+    )
     if mode == "manual":
         loop = True
-        choices = ["y", "q"]
         while loop:
-            user_input = input(
-                f"Please save segmentation as: {mask_display_path}\n"
-                f"Validate segmentation? [{'/'.join(choices)}]"
-            )
+            user_input = input(msg)
             user_input = user_input.lower().strip()
             mask_exist = os.path.exists(manual_mask_path)
  
@@ -67,12 +65,8 @@ def gui(
                 loop = False
     else:
         user_input = None
-        choices = ["y", "q"]
         while user_input not in choices:
-            user_input = input(
-                f"Please save segmentation: {mask_display_path}\n"
-                f"Validate segmentation? [{'/'.join(choices)}]"
-            )
+            user_input = input(msg)
             user_input = user_input.lower().strip()
  
     if gui_mode == "docker":
