@@ -60,9 +60,6 @@ COPY ./src/sparc/cfg/UserPreferences.xml /home/user/.itksnap.org/ITK-SNAP/UserPr
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy SPARC python package tree
-COPY ./src ./src
-
 # Download DL models from Hugging Face
 ARG MODEL_VARIANTS="philips joint siemens siemens_transfer"
 RUN set -e; \
@@ -83,6 +80,7 @@ RUN set -e; \
     done
     
 # Install SPARC python package
+COPY ./src ./src
 COPY pyproject.toml pyproject.toml
 RUN pip install -e .
 
