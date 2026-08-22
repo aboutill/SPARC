@@ -1,4 +1,7 @@
-from .io import init_datalist
+from .io import (
+    init_datalist,
+    check_file,
+)
 from .logging import setup_logging_config
 from .nii import (
     get_nii_range, 

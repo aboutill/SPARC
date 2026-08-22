@@ -188,3 +188,69 @@ def run(
         logging.info(f"Successfully converted stack {stack_id}!")
         
     return stack_mag_nii_paths, stack_pha_nii_paths, stack_infos
+
+
+def run_with_gui(
+        self,
+        input_dir,
+        output_dir,
+        mode,
+        gui_mode,
+        manual_stack_review=False,
+        file_prefix=None,
+        profile=False,
+        debug=False,
+    ):
+    
+    # Run preprocessing
+    stack_mag_nii_paths, stack_pha_nii_paths, stack_infos = self.run(
+        input_dir=input_dir,
+        output_dir=output_dir,
+        file_prefix=file_prefix,
+        profile=profile,
+        debug=debug,
+    )
+    
+    # Optional manual stack review
+    excluded_stack_mag_nii_paths = None
+    excluded_stack_pha_nii_paths = None
+    excluded_stack_infos = None
+    gui_elapsed = None
+    if manual_stack_review and mode != "full_auto":
+        gui_start = datetime.datetime.now()
+        outs = self.stack_review_gui(
+            stack_mag_nii_paths=stack_mag_nii_paths,
+            stack_pha_nii_paths=stack_pha_nii_paths,
+            stack_infos=stack_infos,
+            gui_mode=gui_mode,
+        )
+        stack_mag_nii_paths = outs[0]
+        stack_pha_nii_paths = outs[1]
+        stack_infos = outs[2]
+        excluded_stack_mag_nii_paths = outs[3]
+        excluded_stack_pha_nii_paths = outs[4] 
+        excluded_stack_infos = outs[5]
+        
+        excluded_stack_infos = self.move_excluded_stacks(
+            excluded_stack_mag_nii_paths=excluded_stack_mag_nii_paths,
+            excluded_stack_pha_nii_paths=excluded_stack_pha_nii_paths,
+            excluded_stack_infos=excluded_stack_infos,
+        )
+        gui_elapsed = datetime.datetime.now() - gui_start
+            
+    # Print and save stack information
+    filename = f"{file_prefix}_stacks_qc" if file_prefix is not None else "stacks_qc"
+    report_path = os.path.join(output_dir, f"{filename}.json")
+    self.print_stack_infos(
+        stack_infos=stack_infos,
+    )
+    self.save_stack_infos(
+        stack_infos=stack_infos, 
+        excluded_stack_infos=excluded_stack_infos,
+        output_path=report_path,
+    )
+            
+    return (stack_mag_nii_paths, 
+            stack_pha_nii_paths, 
+            stack_infos,
+            gui_elapsed)

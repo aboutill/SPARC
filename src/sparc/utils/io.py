@@ -1,6 +1,7 @@
 import os
 import glob
 import logging
+import datetime
 
 
 def init_datalist(input_dir, img, mask=None):
@@ -45,3 +46,21 @@ def init_datalist(input_dir, img, mask=None):
         raise FileNotFoundError(f"No {img} and {mask} files in {input_dir}.")
 
     return datalist
+
+
+def check_file(file_path, copy_time):
+    """Return True if file_path was modified after copy_time (i.e.
+    the user actually edited it in ITK-SNAP); if not, delete the
+    unmodified temporary copy."""
+    
+    # Check file modification time
+    modified_time = os.path.getmtime(file_path)
+    modified_time = datetime.datetime.fromtimestamp(modified_time)
+    
+    # No manual refinement
+    user_ref = modified_time > copy_time
+    if not user_ref:
+        # Remove temporary file
+        os.remove(file_path)
+        
+    return user_ref

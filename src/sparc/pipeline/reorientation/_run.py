@@ -546,3 +546,61 @@ def manual_run(
             pad=cine_pad,
             crop=cine_crop,
         )
+        
+
+def run_with_gui(
+        self,
+        cine_nii_path,
+        heart_mask_path,
+        stack_nii_paths,
+        output_dir,
+        mode,
+        gui_mode,
+        profile=False,
+        debug=False,
+    ):
+    
+    # Run reorientation network
+    (reo_cine_nii_path,
+     ctr_cine_nii_path,
+     ctr_heart_mask_path,
+     aff_path,
+     reo_qc_report_path) = self.run(
+        cine_nii_path=cine_nii_path,
+        heart_mask_path=heart_mask_path,
+        stack_nii_paths=stack_nii_paths,
+        output_dir=output_dir,
+        mode=mode,
+        profile=profile,
+        debug=debug,
+    )
+    
+    reo_valid = False
+    gui_elapsed = None
+    if mode == "monitored_auto":
+        reo_valid = self.validate_reo(
+            qc_report_path=reo_qc_report_path,
+        )
+        
+    if (mode in ("manual", "semi_auto")
+        or (mode == "monitored_auto" and not reo_valid)):
+        gui_start = datetime.datetime.now()
+        reo_cine_nii_path = self.gui(
+            reo_cine_nii_path=reo_cine_nii_path,
+            ctr_cine_nii_path=ctr_cine_nii_path,
+            ctr_heart_mask_path=ctr_heart_mask_path,
+            aff_path=aff_path,
+            stack_nii_paths=stack_nii_paths,
+            output_dir=output_dir,
+            mode=mode,
+            gui_mode=gui_mode,
+        )
+        gui_elapsed = datetime.datetime.now() - gui_start
+        
+    if not debug:
+        os.remove(ctr_cine_nii_path)
+        os.remove(ctr_heart_mask_path)
+        
+    return (reo_cine_nii_path,
+            reo_qc_report_path,
+            gui_elapsed)

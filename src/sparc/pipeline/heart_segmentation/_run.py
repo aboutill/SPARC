@@ -61,3 +61,47 @@ def run(
         logging.info(f"Time for heart segmentation: {elapsed_time}")
     
     return mask_path, qc_report_path
+
+
+def run_with_gui(
+        self,
+        cine_nii_path,
+        output_dir,
+        mode,
+        gui_mode,
+        profile=False,
+        debug=False,
+    ):
+    
+    # Run heart segmentation
+    heart_mask_path = None
+    heart_mask_qc_path = None
+    heart_mask_valid = False
+    gui_elapsed = None
+    if mode != "manual":
+        heart_mask_path, heart_mask_qc_path = self.run(
+            cine_nii_path=cine_nii_path,
+            output_dir=output_dir,
+            profile=profile,
+            debug=debug,
+        )
+        if mode == "monitored_auto":
+            heart_mask_valid = self.validate_mask(
+                qc_report_path=heart_mask_qc_path,
+            )
+    if (self.activate_gui 
+        and (mode in ("manual", "semi_auto")
+        or (mode == "monitored_auto" and not heart_mask_valid))):
+        gui_start = datetime.datetime.now()
+        heart_mask_path = self.gui(
+            cine_nii_path=cine_nii_path,
+            heart_mask_path=heart_mask_path,
+            output_dir=output_dir,
+            mode=mode,
+            gui_mode=gui_mode,
+        )
+        gui_elapsed = datetime.datetime.now() - gui_start
+            
+    return (heart_mask_path,
+            heart_mask_qc_path,
+            gui_elapsed)

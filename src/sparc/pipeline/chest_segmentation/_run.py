@@ -67,3 +67,67 @@ def run(
         logging.info(f"Time for stack chest segmentation: {elapsed_time}")
     
     return mask_path, qc_report_path
+
+
+def run_with_gui(
+        self,
+        stack_mag_nii_paths,
+        stack_pha_nii_paths,
+        stack_infos,
+        output_dir,
+        mode,
+        gui_mode,
+        profile=False,
+        debug=False,
+    ):
+    
+    # Sort stacks
+    stack_mag_nii_paths, stack_pha_nii_paths, stack_infos = self.sort_stacks(
+        stack_mag_nii_paths=stack_mag_nii_paths,
+        stack_pha_nii_paths=stack_pha_nii_paths,
+        stack_infos=stack_infos,
+    )
+    
+    # Select 1st stack
+    target_stack_nii_path = stack_mag_nii_paths[0]
+    chest_mask_idx = 0
+    
+    # Run chest segmentation
+    chest_mask_path = None
+    chest_mask_qc_path = None
+    chest_mask_valid = False
+    gui_elapsed = None
+    if mode != "manual":
+        chest_mask_path, chest_mask_qc_path = self.run(
+            stack_nii_path=target_stack_nii_path,
+            output_dir=output_dir,
+            profile=profile,
+            debug=debug,
+        )
+        if mode == "monitored_auto":
+            chest_mask_valid = self.validate_mask(
+                qc_report_path=chest_mask_qc_path,
+            )
+    if (mode in ("manual", "semi_auto")
+        or (mode == "monitored_auto" and not chest_mask_valid)):
+        gui_start = datetime.datetime.now()
+        chest_mask_path, chest_mask_idx = self.gui(
+            stack_nii_paths=stack_mag_nii_paths,
+            chest_mask_path=chest_mask_path,
+            stack_infos=stack_infos,
+            output_dir=output_dir,
+            mode=mode,
+            gui_mode=gui_mode,
+            profile=profile,
+            debug=debug,
+        )
+        gui_elapsed = datetime.datetime.now() - gui_start
+        
+    stack_infos[chest_mask_idx]["chest_mask"] = chest_mask_path
+    
+    return (stack_mag_nii_paths, 
+            stack_pha_nii_paths, 
+            stack_infos,
+            chest_mask_path,
+            chest_mask_qc_path,
+            gui_elapsed)

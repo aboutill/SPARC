@@ -26,7 +26,9 @@ class Reorientor:
         load_itksnap_affine,
         run,
         manual_run,
+        run_with_gui,
     )
+    from ._gui import gui
     
     def __init__(
             self,

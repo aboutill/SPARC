@@ -18,7 +18,11 @@ class ChestSegmentator:
         print_model_info, 
         print_qc,
     )
-    from ._run import run 
+    from ._run import (
+        run, 
+        run_with_gui,
+    )
+    from ._gui import gui
     
     def __init__(
             self,

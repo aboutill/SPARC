@@ -5,6 +5,7 @@ class PreProcessor:
     
     from ._run import (
         run,
+        run_with_gui,
         compute_rr_interval,
     )
     from ._dcm import (
@@ -31,6 +32,8 @@ class PreProcessor:
         move_excluded_stacks,
         save_stack_infos,
     )
+    from ._gui import stack_review_gui
+
     
     def __init__(
             self,

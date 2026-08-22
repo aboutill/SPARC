@@ -15,17 +15,7 @@ class Pipeline:
         save_pipeline_info,
         save_qc_report,
     )
-    from ._run import (
-        excluded_from_timer,
-        run,
-    )
-    from ._gui import (
-        _check_file,
-        stack_review_gui,
-        chest_segmentation_gui,
-        heart_segmentation_gui,
-        reorientation_gui,
-    )
+    from ._run import run
     
     def __init__(
             self,
