@@ -232,11 +232,7 @@ def run(
     )
     
     subjects = sorted(list(datalist.keys()))
-    test_set = [
-        datalist[subjects[i]][j] 
-        for i in range(len(subjects)) 
-        for j in range(len(datalist[subjects[i]]))
-    ]
+    test_set = [datalist[s][j] for s in subjects for j in range(len(datalist[s]))]
     
     labels = self.data_cfg.get("mask") is not None
 
