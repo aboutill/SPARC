@@ -16,7 +16,7 @@ SPARC combines a physics-informed slice-to-volume reconstruction (SVR) algorithm
  	
 ## Preamble
 
-The SPARC pipeline is a research software developed alongside the following: [10.48550/arXiv.2608.18616](https://doi.org/10.48550/arXiv.2608.18616). The pipeline is used to generate the results reported in that manuscript, and this repository is intended to support their reproduction.
+The SPARC pipeline is a research software developed alongside the following: [10.48550/arXiv.2608.18616](https://doi.org/10.48550/arXiv.2608.18616). The pipeline is used to generate the results reported in that manuscript, and this repository is intended to support their reproduction. The Docker image is accessible from Docker Hub at [https://hub.docker.com/r/aboutill/sparc](https://hub.docker.com/r/aboutill/sparc).
 
 The 3D+time SVR algorithm is a physics-based method (unlike this pipeline's deep-learning segmentation and reorientation components, it requires no domain-specific training) and is maintained as a separate, general-purpose project: [https://github.com/baby-MedIA/svr-lite](https://github.com/baby-MedIA/svr-lite).
 
@@ -202,9 +202,9 @@ Pretrained models for all three components are baked into the Docker image by de
 
 For a host-side copy (e.g. as a starting checkpoint for `SPARC train --models`) or to browse the models weights directly, they're also hosted on Hugging Face Hub:
 
-- [aboutill/sparc-chest-segmentation](https://huggingface.co/aboutill/sparc-chest-segmentation)
-- [aboutill/sparc-heart-segmentation](https://huggingface.co/aboutill/sparc-heart-segmentation)
-- [aboutill/sparc-reorientation](https://huggingface.co/aboutill/sparc-reorientation)
+- [https://huggingface.co/aboutill/sparc-chest-segmentation](https://huggingface.co/aboutill/sparc-chest-segmentation)
+- [https://huggingface.co/aboutill/sparc-heart-segmentation](https://huggingface.co/aboutill/sparc-heart-segmentation)
+- [https://huggingface.co/aboutill/sparc-reorientation](https://huggingface.co/aboutill/sparc-reorientation)
 
 Each repository's four variants are available as separate branches. Download a host-side copy via:
 
