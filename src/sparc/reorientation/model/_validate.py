@@ -16,7 +16,8 @@ def validate(
         workers=8,
     ):
     """Load the best checkpoint and run repeated random-pose
-    validation passes, saving raw and summary metrics."""
+    validation passes, saving raw and summary metrics.
+    """
     
     # Load weights
     if os.path.exists(self.model_path):
@@ -25,7 +26,7 @@ def validate(
     # Initialize data loader
     val_loader = DataLoader(
         dataset=val_ds, 
-        batch_size=1,
+        batch_size=len(val_ds),
         shuffle=False, 
         num_workers=workers,
     )
@@ -67,12 +68,10 @@ def validate(
     # Metrics dataframe
     metrics_df = {metric_str: [] for metric_str in metrics_str}
     
-    # Update dataframe
     for metric_str in metrics_str:
         col = metrics_raw_df[metric_str]
         metrics_df[metric_str].append(np.mean(col))
         
-    # Save metrics
     metrics_df = pd.DataFrame(metrics_df)
     metrics_df.to_csv(
         os.path.join(self.metrics_dir, "metrics.csv"), index=False
@@ -89,126 +88,116 @@ def _validate_step(
         translate_range=None,
     ):
     """Run one validation pass over the full validation set and save
-    predicted/deformed images."""
+    predicted/deformed images, one output set per sample per batch."""
     
-    # Set validation mode
     self.net.eval()
     
-    # Iter over batches
     with torch.no_grad():
         for batch in val_loader:
             
-            # Load image and mask
             img = batch["image"].to(self.device, non_blocking=True)
             if "label" in batch.keys():
                 mask = batch["label"].to(self.device, non_blocking=True)
             else:
                 mask = None
-            file_path = batch["image_meta_dict"]["filename_or_obj"][0]
+            file_paths = batch["image_meta_dict"]["filename_or_obj"]
             
-            # Validate batch
-            imgs = self._validate_batch(
+            per_sample_imgs = self._validate_batch(
                 img=img,
                 mask=mask,
                 rotate_range=rotate_range,
                 translate_range=translate_range,
-                file_path=file_path,
+                file_paths=file_paths,
                 val_step=val_step,
                 metrics_raw_df=metrics_raw_df,
             )
             
-            #
-            dirname = os.path.dirname(file_path)
             file_ext = ".nii.gz"
-            
-            # Define folder for predictions
-            folder = dirname.replace(self.data_root_dir, prediction_dir)
-            os.makedirs(folder, exist_ok=True)
-            
-            # Save images
-            for key, arr in imgs.items():
-                out_name = f"{key}_{val_step}{file_ext}"
-                out_path = os.path.join(folder, out_name)
-                if arr is not None:
-                    self.save_img(arr, out_path)
+            for file_path, imgs in zip(file_paths, per_sample_imgs):
+                dirname = os.path.dirname(file_path)
+                folder = dirname.replace(self.data_root_dir, prediction_dir)
+                os.makedirs(folder, exist_ok=True)
+
+                for key, arr in imgs.items():
+                    out_name = f"{key}_{val_step}{file_ext}"
+                    out_path = os.path.join(folder, out_name)
+                    if arr is not None:
+                        self.save_img(arr, out_path)
                 
             
 def _validate_batch(
         self,
         img,
         mask,
-        file_path,
+        file_paths,
         val_step,
         metrics_raw_df,
         rotate_range=None,
         translate_range=None,
     ):
-    """Simulate a random pose for one batch, predict its inverse,
-    compute metrics, and return images for saving."""
-    
-    # Initialize inverse affine matrix and points
+    """Simulate an independent random pose per sample in the batch,
+    predict its inverse, compute metrics, and return a list of
+    per-sample image dicts (one per sample) for saving.
+    """
+    batch_size = img.shape[0]
+
     affine_matrix, (angle, t) = self.init_affine_matrix(
-        n=1, 
+        n=batch_size, 
         r_range=rotate_range,
         t_range=translate_range,
     )
     inv_affine_matrix = self.invert_affine_matrix(affine_matrix)
 
-    # Apply ground-truth transform
     img_def, _ = self.apply_transform(img, affine_matrix)
     mask_def, _ = self.apply_transform(mask, affine_matrix, mode="nearest")
 
-    # Predict points and reconstruct affine
     points_pred, _ = self.net(img_def)
     affine_matrix_pred = self.points_to_matrix(points_pred)
 
-    # Apply predicted transform
     img_pred, _ = self.apply_transform(img_def, affine_matrix_pred)
     mask_pred, _ = self.apply_transform(mask_def, affine_matrix_pred, mode="nearest")
 
-    # Rotation matrices
     R_gt, R_pred = inv_affine_matrix[:, :3, :3], affine_matrix_pred[:, :3, :3]
     t_gt, t_pred = inv_affine_matrix[:, :3, 3], affine_matrix_pred[:, :3, 3]
 
-    # Convert tensors to numpy
-    img_gt = img.detach().cpu().numpy().squeeze()
-    img_pred = img_pred.detach().cpu().numpy().squeeze()
+    # Batch-vectorized
+    gd = self.geodesic_distance(R_gt, R_pred, reduction="none")
+    td = self.translation_distance(t_gt, t_pred, reduction="none")
+
+    img_gt_np = img.detach().cpu().numpy().squeeze(1)
+    img_pred_np = img_pred.detach().cpu().numpy().squeeze(1)
+    img_def_np = img_def.detach().cpu().numpy().squeeze(1)
     if mask is not None:
-        mask_gt = mask.detach().cpu().numpy().squeeze().astype(bool)
+        mask_gt_np = mask.detach().cpu().numpy().squeeze(1).astype(bool)
+        mask_def_np = mask_def.detach().cpu().numpy().squeeze(1)
+        mask_pred_np = mask_pred.detach().cpu().numpy().squeeze(1)
     else:
-        mask_gt = None
-    
-    # Metrics
-    gd = self.geodesic_distance(R_gt, R_pred)
-    td = self.translation_distance(t_gt, t_pred)
-    nmi = self.normalised_mutual_information(img_gt, img_pred, mask_gt)
-    psnr = self.peak_signal_to_noise_ratio(img_gt, img_pred, mask_gt)
-    
-    # Record metrics
-    metrics_raw_df["filename"].append(file_path)
-    metrics_raw_df["angle"].append(angle[0])
-    metrics_raw_df["translation"].append(np.linalg.norm(t))
-    metrics_raw_df["geodesic-distance"].append(gd.item())
-    metrics_raw_df["translation-distance"].append(td.item())
-    metrics_raw_df["normalised-mutual-information"].append(nmi)
-    metrics_raw_df["peak-signal-to-noise-ratio"].append(psnr)
-    metrics_raw_df["step"].append(val_step)
-    
-    # Convert tensors to numpy
-    if mask is not None:
-        mask_gt = mask_gt.astype(np.uint8)
-        mask_def = mask_def.detach().cpu().numpy().squeeze()
-        mask_pred = mask_pred.detach().cpu().numpy().squeeze()
-    img_def = img_def.detach().cpu().numpy().squeeze()
-    
-    #
-    imgs = {
-        "img_gt": img_gt,
-        "mask_gt": mask_gt,
-        "img_def": img_def,
-        "mask_def": mask_def,
-        "img_pred": img_pred,
-        "mask_pred": mask_pred,
-    }
-    
-    return imgs
+        mask_gt_np = mask_def_np = mask_pred_np = None
+
+    per_sample_imgs = []
+    for i in range(batch_size):
+        mask_gt_i = mask_gt_np[i] if mask_gt_np is not None else None
+
+        nmi = self.normalised_mutual_information(img_gt_np[i], img_pred_np[i], mask_gt_i)
+        psnr = self.peak_signal_to_noise_ratio(img_gt_np[i], img_pred_np[i], mask_gt_i)
+
+        metrics_raw_df["filename"].append(file_paths[i])
+        metrics_raw_df["angle"].append(angle[i])
+        metrics_raw_df["translation"].append(np.linalg.norm(t[i]))
+        metrics_raw_df["geodesic-distance"].append(gd[i].item())
+        metrics_raw_df["translation-distance"].append(td[i].mean().item())
+        metrics_raw_df["normalised-mutual-information"].append(nmi)
+        metrics_raw_df["peak-signal-to-noise-ratio"].append(psnr)
+        metrics_raw_df["step"].append(val_step)
+
+        imgs = {
+            "img_gt": img_gt_np[i],
+            "mask_gt": mask_gt_i.astype(np.uint8) if mask_gt_i is not None else None,
+            "img_def": img_def_np[i],
+            "mask_def": mask_def_np[i] if mask_def_np is not None else None,
+            "img_pred": img_pred_np[i],
+            "mask_pred": mask_pred_np[i] if mask_pred_np is not None else None,
+        }
+        per_sample_imgs.append(imgs)
+
+    return per_sample_imgs
