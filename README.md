@@ -196,8 +196,6 @@ SPARC test --input /data/test --output /results/test \
 
 Run `SPARC train -h` / `SPARC test -h` for the full set of options.
 
----
-
 ### Downloading pretrained models
 
 Pretrained models for all three components are baked into the Docker image by default, across all four training-domain variants (`philips`, `siemens`, `siemens_transfer`, `joint`).
