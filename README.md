@@ -38,6 +38,7 @@ The pipeline leverages a recently introduced, CE-marked Doppler ultrasound devic
 - [Operating modes](#operating-modes)
 - [Configuration](#configuration)
 - [Training and testing your own models](#training-and-testing-your-own-models)
+  - [Downloading pretrained models](#downloading-pretrained-models)
 - [Reproducibility](#reproducibility)
   - [Training experiments](#training-experiments)
   - [Statistical analysis](#statistical-analysis)
@@ -193,13 +194,27 @@ SPARC test --input /data/test --output /results/test \
            --task segmentation --cfg model_config.yaml --models /path/to/checkpoints
 ```
 
-Pretrained models can be downloaded via:
+Run `SPARC train -h` / `SPARC test -h` for the full set of options.
+
+---
+
+### Downloading pretrained models
+
+Pretrained models for all three components are baked into the Docker image by default, across all four training-domain variants (`philips`, `siemens`, `siemens_transfer`, `joint`).
+
+For a host-side copy (e.g. as a starting checkpoint for `SPARC train --models`) or to browse the models weights directly, they're also hosted on Hugging Face Hub:
+
+- [aboutill/sparc-chest-segmentation](https://huggingface.co/aboutill/sparc-chest-segmentation)
+- [aboutill/sparc-heart-segmentation](https://huggingface.co/aboutill/sparc-heart-segmentation)
+- [aboutill/sparc-reorientation](https://huggingface.co/aboutill/sparc-reorientation)
+
+Each repository's four variants are available as separate branches. Download a host-side copy via:
 
 ```bash
 SPARC download-models --output /path/to/pretrained
 ```
 
-Run `SPARC train -h` / `SPARC test -h / SPARC download-models -h` for the full set of options.
+Run `PARC download-models -h` for the full set of options.
 
 ---
 
