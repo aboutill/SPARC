@@ -214,7 +214,7 @@ Each repository's four variants are available as separate branches. Download a h
 SPARC download-models --output /path/to/pretrained
 ```
 
-Run `PARC download-models -h` for the full set of options.
+Run `SPARC download-models -h` for the full set of options.
 
 ---
 
