@@ -158,7 +158,7 @@ For modes that involve review, `--gui_mode` selects how that review happens:
 
 ## Configuration
 
-SPARC's algorithmic behaviour is controlled by `cfg/pipeline.yaml`, which is documented inline and covers, per stage:
+SPARC's default algorithmic behaviour is controlled by `src/sparc/cfg/pipeline_default.yaml`, which is documented inline and covers, per stage:
 
 - DICOM tag names used to identify magnitude/phase images, RR intervals, stack IDs, and acquisition parameters (vendor/site-dependent, check these first before deployment).
 - Preprocessing corrections to enable (zero-filling removal, denoising, Gibbs correction, bias-field correction).
