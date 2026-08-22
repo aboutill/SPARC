@@ -68,7 +68,7 @@ class HeartSegmentator:
             models_cfg_path = DEFAULT_MODEL_CFG_PATH
             if not os.path.isdir(models_dir):
                 raise ValueError(
-                    f"Default chest segmentation models directory not "
+                    f"Default heart segmentation models directory not "
                     f"found for models='{self.models}': {models_dir}"
                 )
         else:
