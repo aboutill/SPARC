@@ -137,6 +137,8 @@ def run(
         return
     
     # Run heart segmentation with gui
+    heart_mask_path = None
+    heart_mask_qc_path = None
     if self.heart_segmentator.activate:
         (heart_mask_path,
          heart_mask_qc_path,
