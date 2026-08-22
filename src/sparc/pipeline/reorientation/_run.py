@@ -20,6 +20,7 @@ def center_on_heart_mask(
         input_heart_mask_path=None,
         output_heart_mask_path=None,
         max_pad_frac=1/3,
+        vol_thresh=5e3, # mm3
     ):
     """Recentre a cine volume on the segmented heart mask's centre by
     padding the output bounding box so the full original field of view
@@ -40,7 +41,6 @@ def center_on_heart_mask(
 
     dims = header["dim"][1:4].astype(np.int64)
 
-    vol_thresh = 5e3
     img_center = (dims - 1) // 2
     vol = np.sum(mask) * np.prod(header["pixdim"][1:4])
     if vol < vol_thresh:
