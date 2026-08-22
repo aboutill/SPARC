@@ -34,7 +34,7 @@ def validate(
     # Define metrics
     metrics_str = [
         "geodesic-distance",
-        "translation-distance",
+        "center-distance",
         "normalised-mutual-information",
         "peak-signal-to-noise-ratio",
     ]
@@ -162,7 +162,7 @@ def _validate_batch(
 
     # Batch-vectorized
     gd = self.geodesic_distance(R_gt, R_pred, reduction="none")
-    td = self.translation_distance(t_gt, t_pred, reduction="none")
+    cd = self.centre_distance(t_gt, t_pred, reduction="none")
 
     img_gt_np = img.detach().cpu().numpy().squeeze(1)
     img_pred_np = img_pred.detach().cpu().numpy().squeeze(1)
@@ -185,7 +185,7 @@ def _validate_batch(
         metrics_raw_df["angle"].append(angle[i])
         metrics_raw_df["translation"].append(np.linalg.norm(t[i]))
         metrics_raw_df["geodesic-distance"].append(gd[i].item())
-        metrics_raw_df["translation-distance"].append(td[i].mean().item())
+        metrics_raw_df["center-distance"].append(cd[i].item())
         metrics_raw_df["normalised-mutual-information"].append(nmi)
         metrics_raw_df["peak-signal-to-noise-ratio"].append(psnr)
         metrics_raw_df["step"].append(val_step)

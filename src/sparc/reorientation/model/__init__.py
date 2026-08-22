@@ -16,6 +16,7 @@ class Model():
         euclidean_distance,
         geodesic_distance,
         translation_distance,
+        centre_distance,
         normalised_mutual_information,
         peak_signal_to_noise_ratio,
     )
