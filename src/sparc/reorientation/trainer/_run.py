@@ -113,7 +113,7 @@ def run(
         # Transfer learning
         if models_paths is not None:
             state = torch.load(models_paths[fold])
-            model.net.load_state_dict(state, strict=False)
+            model.net.load_state_dict(state)
                           
         # Display step
         logging.info(f"Fold {fold+1}/{folds}: network training...")     

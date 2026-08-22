@@ -83,7 +83,7 @@ def load_ensemble(self, models_dir):
             **self.vit_cfg,
         )
         model.to_device(device=self.device)
-        model.net.load_state_dict(torch.load(model_path), strict=False)
+        model.net.load_state_dict(torch.load(model_path))
         self.models.append(model)
         
         
